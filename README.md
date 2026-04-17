@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+AI-Powered Home Care Coordination & Emergency Prevention
 
-## Getting Started
+Background: As Malaysia transitions toward "Aged Society" status, the public healthcare system faces unprecedented strain. Overcrowding in Emergency Departments and a shortage of home-care monitoring for the elderly are critical issues requiring immediate technological intervention.
 
-First, run the development server:
+### Problem Statement
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Malaysia is transitioning into an aged society, putting pressure on the healthcare system.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Emergency Department Overcrowding
+40–60% of elderly ED visits are non-urgent
+Long wait times (4–6 hours)
+High cost (~RM 2,500 per visit)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+:point_right: Many cases could be handled outside hospitals.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Home Care Monitoring Gap
 
-## Learn More
+After discharge, elderly patients:
 
-To learn more about Next.js, take a look at the following resources:
+Require ongoing monitoring
+Depend on untrained caregivers
+Show early warning signs that are often missed
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Caregivers:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Feel uncertain
+Become overwhelmed
+Default to ED visits “just in case”
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### :bulb: Solution
+CareCircle = Chat → Understand → Act
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+CareCircle is a WhatsApp-based AI care coordination system that:
+
+Supports caregivers at home
+Detects concerning changes early
+Automatically coordinates the right help
+
+### :rocket: Key Innovation
+:brain: Smart Risk Awareness (Not Prediction)
+
+CareCircle continuously observes:
+
+Medication adherence
+Daily caregiver check-ins
+Symptoms and changes
+Behavioral signals (eating, mobility)
+Output:
+
+A simple risk level indicator
+
+Level    Meaning    Action
+:green_circle: Stable    No concern    Continue monitoring
+:yellow_circle: Needs attention    Something changed    Trigger support
+:red_circle: Urgent    High concern    Immediate action
+
+:point_right: No diagnosis, no prediction — just safe, actionable signals
+
+:zap: From Chat → Action
+
+CareCircle goes beyond advice and takes real actions:
+
+:date: Book teleconsults
+:family_mwg: Notify family members
+:handshake: Connect community support
+:pill: Send medication reminders
+:ambulance: Escalate emergencies (999)
+:arrows_counterclockwise: Increase monitoring automatically
