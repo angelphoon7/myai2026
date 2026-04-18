@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express, { Request, Response } from "express";
 import { getAIResponse } from "./ai";
+import { db } from "./firebase";
 
 const app = express();
 app.use(express.urlencoded({ extended: false }));
@@ -24,6 +25,7 @@ function escapeXml(unsafe: string) {
 app.post("/webhook", async (req: Request, res: Response) => {
   try {
     const incomingMsg = req.body.Body || "";
+    const from = req.body.From || "";
     console.log("Incoming:", incomingMsg);
 
     const aiReply = await getAIResponse(incomingMsg);
@@ -43,6 +45,15 @@ app.post("/webhook", async (req: Request, res: Response) => {
 
     console.log("Detected urgency:", urgency);
     console.log("System action:", systemAction);
+
+    await db.collection("messages").add({
+      incomingMsg,
+      aiReply,
+      urgency,
+      systemAction,
+      from,
+      createdAt: new Date().toISOString(),
+    });
 
     const fullReply = `${aiReply}\nSystem Action: ${systemAction}`;
     const safeReply = escapeXml(fullReply);
