@@ -5,6 +5,13 @@ import { getAIResponse } from "./ai";
 const app = express();
 app.use(express.urlencoded({ extended: false }));
 
+function extractUrgency(text: string): "Low" | "Medium" | "Emergency" | "Unknown" {
+  if (text.includes("Urgency: Emergency")) return "Emergency";
+  if (text.includes("Urgency: Medium")) return "Medium";
+  if (text.includes("Urgency: Low")) return "Low";
+  return "Unknown";
+}
+
 function escapeXml(unsafe: string) {
   return unsafe
     .replace(/&/g, "&amp;")
@@ -22,7 +29,23 @@ app.post("/webhook", async (req: Request, res: Response) => {
     const aiReply = await getAIResponse(incomingMsg);
     console.log("AI reply:", aiReply);
 
-    const safeReply = escapeXml(aiReply);
+    const urgency = extractUrgency(aiReply);
+
+    let systemAction = "No action";
+
+    if (urgency === "Low") {
+      systemAction = "Monitoring started";
+    } else if (urgency === "Medium") {
+      systemAction = "Teleconsult should be booked";
+    } else if (urgency === "Emergency") {
+      systemAction = "Emergency services should be alerted";
+    }
+
+    console.log("Detected urgency:", urgency);
+    console.log("System action:", systemAction);
+
+    const fullReply = `${aiReply}\nSystem Action: ${systemAction}`;
+    const safeReply = escapeXml(fullReply);
 
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
