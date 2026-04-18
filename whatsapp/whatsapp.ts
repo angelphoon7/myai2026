@@ -38,7 +38,7 @@ app.post("/webhook", async (req: Request, res: Response) => {
     } else if (urgency === "Medium") {
       systemAction = "Teleconsult should be booked";
     } else if (urgency === "Emergency") {
-      systemAction = "Emergency services should be alerted";
+      systemAction = "Emergency services should be alerted immediately";
     }
 
     console.log("Detected urgency:", urgency);
