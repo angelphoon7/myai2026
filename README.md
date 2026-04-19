@@ -4,176 +4,363 @@
 
 ---
 
-## The Problem 🏥
+## 1. The Problem
 
-Malaysia is transitioning into an **Aged Society**, putting severe pressure on a healthcare system that was never designed to absorb it. The burden shows up in two critical places.
+### Malaysia Is Becoming an Aged Society
 
-1. **Emergency Department Overcrowding:** 40–60% of elderly ED visits are non-urgent and could have been handled at home or at a clinic. Each visit costs approximately RM 2,500, generates 4–6 hour wait times, and consumes capacity that genuine emergencies need. The root cause is not medical — it is a decision-making gap at home.
+Malaysia is on track to reach **Aged Society status** — where 14% of the population is over 65 — within this decade. This demographic shift is placing unprecedented strain on a public healthcare system that was not designed to absorb it.
 
-2. **Untrained Family Caregivers Left Alone:** The majority of elderly Malaysians are cared for by untrained family members — a daughter, a spouse, a grandchild. When something changes, they have no system to assess severity. Their default response is the Emergency Department, not because the patient needs it, but because the caregiver has no better option.
-
-3. **No Daily Monitoring Between Hospital Visits:** After discharge, elderly patients return home with no structured follow-up. Early warning signs — missed medications, declining appetite, subtle behavioural changes — go undetected until a crisis forces another hospital visit.
-
-4. **Caregiver Burnout Goes Untracked:** An estimated 3.4 million informal caregivers in Malaysia receive no support, no monitoring, and no recognition. Their burnout directly worsens patient outcomes — missed medications, delayed symptom recognition, and more ED visits.
-
-5. **Language and Technology Barriers:** Existing health technology is English-first, app-dependent, and designed for urban, tech-savvy users. It does not reach the caregiver in Seremban, Kuantan, or Kelantan who communicates in Bahasa Malaysia and cannot afford or navigate a dedicated health app.
-
-6. **Vital Signs Are Never Tracked at Home:** For elderly patients with Diabetes or Hypertension, daily readings (blood sugar, blood pressure) are the most reliable early indicators of deterioration. Yet no simple, accessible system exists to capture and trend this data from home.
+The burden falls in two places.
 
 ---
 
-## The Solution 🔑
+### Emergency Department Overcrowding
 
-KAI is a **WhatsApp-based AI care coordination system** that meets caregivers where they already are — on WhatsApp, in their own language — and gives them the clinical confidence to act early instead of defaulting to the Emergency Department.
+| Metric | Reality |
+|---|---|
+| Non-urgent elderly ED visits | 40–60% of total visits |
+| Average wait time | 4–6 hours |
+| Average cost per visit | ~RM 2,500 |
+| Root cause | Caregivers defaulting to ED "just in case" |
 
-1. **Zero-Friction Access via WhatsApp:** KAI requires no app download, no account creation, and no technical knowledge. It works on any smartphone with WhatsApp — the platform already used by over 85% of Malaysians across all age groups and regions. The barrier to entry is zero.
-
-2. **AI Triage — "Should I Go to A&E?":** When a caregiver reports a concern, KAI performs a full clinical triage assessment using the patient's condition, medications, age, and weekly history. It returns one of three clear verdicts — **Home Care**, **Clinic Today**, or **Go to A&E Now** — with specific, actionable steps for each. This directly intercepts unnecessary ED visits at the moment of decision.
-
-3. **Daily Structured Check-Ins with Health Memory:** KAI initiates daily check-ins at the caregiver's configured times, tracking medication adherence, meals, and concerns. It scans the last 7 days of history to detect patterns — missed medications, recurring concerns, declining nutrition — and surfaces them at the start of each session before they become emergencies.
-
-4. **Condition-Specific Vital Sign Logging:** After every check-in, KAI asks for one daily vital reading tailored to the patient's condition — blood sugar for Diabetes, blood pressure for Hypertension, a condition score for Stroke and Dementia. It trends these readings over time and alerts caregivers when values are outside safe ranges or rising consecutively.
-
-5. **Caregiver Wellness Check — The Human Layer:** Every three days, KAI asks the caregiver how they are holding up. If exhaustion or distress is reported, KAI responds with specific support and encourages family redistribution of care. This is the only feature in this space that treats caregiver wellbeing as a clinical variable — because caregiver collapse leads directly to patient deterioration.
-
-6. **Full Bahasa Malaysia Support:** KAI conducts all interactions — onboarding, check-ins, triage, AI responses, escalation alerts — in the caregiver's preferred language, powered by Gemini's native multilingual capability. This makes KAI the first AI care system in Malaysia designed for the caregivers who need it most, not just those who can navigate English-first technology.
+Most of these visits are **preventable**. Elderly patients arrive at Emergency Departments not because of true emergencies, but because their caregivers — typically untrained family members — had no reliable way to assess whether a symptom was serious or manageable at home.
 
 ---
 
-## How Our Project Works ⚙️
+### The Home Care Monitoring Gap
 
-**Onboarding — One Time, Under 2 Minutes**
+After hospital discharge, elderly patients are sent home to recover under the supervision of family caregivers who:
 
-A new caregiver sends a WhatsApp message to KAI's number. An 8-step guided setup captures language preference, caregiver name, patient name and age, primary condition, current medication list, and preferred check-in times. All data is stored in Firebase Firestore and used to personalise every interaction going forward.
+- Have **no clinical training** to interpret symptoms
+- Feel **uncertain and overwhelmed**, especially when something changes
+- Lack a system to **track patterns** over time (missed medications, skipped meals, recurring concerns)
+- Default to the Emergency Department as the safest option, even for non-urgent cases
 
-**Daily Check-In Flow**
+The result: avoidable ED visits, caregiver burnout, and deteriorating patient outcomes — all compounding the strain on Malaysia's public hospitals.
 
-At the caregiver's configured times, KAI initiates a structured 3-question check-in via WhatsApp:
+---
 
-- **Medication taken?** — If NO, KAI provides specific advice referencing the patient's actual medications by name
-- **Meals eaten?** — If NO, KAI suggests appropriate interventions (light foods, fluids, small frequent meals)
-- **Any concerns today?** — If YES, KAI transitions directly into the AI Triage flow
+## 2. The Solution
 
-**Care Score**
+### KAI — Your AI Caregiver Companion
 
-At the end of every check-in, KAI calculates a daily Care Score (0–100) based on medication adherence (50 pts), meals (15 pts), and no concerns (35 pts). The score is presented with a status label — All Good, Slightly at Risk, Needs Attention, or High Risk — giving caregivers an immediate, intuitive picture of their patient's day.
+KAI is a **WhatsApp-based AI care coordination system** that gives every family caregiver in Malaysia access to 24/7 clinical guidance — with zero app downloads, zero hardware, and zero technical knowledge required.
 
-**Vital Sign Logging**
+KAI works on any phone that can send a WhatsApp message.
 
-After the Care Score, KAI asks for one condition-specific vital reading. Readings are stored per day in Firestore and analysed against the previous 7 days. If a reading is critically out of range or has been rising for three consecutive days, KAI issues an alert with a specific recommended action.
+```
+Chat → Understand → Act
+```
 
-**Health Memory & Pattern Detection**
+KAI does three things that no existing solution combines:
 
-Before every check-in, KAI scans the last 7 days of history. If the patient has missed medication 2+ times or skipped meals 2+ times, KAI surfaces this observation at the start of the session. When patterns cross a risk threshold, KAI presents a structured escalation menu — set a medication reminder, notify a family member, or book a teleconsult.
+1. **Monitors daily** — structured check-ins track medication, meals, and concerns every day
+2. **Detects early** — pattern memory identifies concerning trends before they become emergencies
+3. **Decides clearly** — AI triage tells caregivers exactly whether to stay home, go to a clinic, or go to A&E immediately
 
-**AI Triage Flow**
+---
 
-When a caregiver describes a concern, KAI's Genkit-powered triage flow processes the full patient context — condition, medications, age, weekly pattern history — and returns one of three clearly structured responses:
+### Why WhatsApp?
 
-- 🟢 **HOME CARE** — specific step-by-step actions and warning signs to watch for
-- 🟡 **CLINIC TODAY** — what to tell the doctor and what to do while waiting
-- 🔴 **GO TO A&E NOW** — a pre-formatted patient handoff summary the caregiver can show the doctor on arrival
+WhatsApp penetration in Malaysia exceeds **85%** across all age groups, including elderly caregivers in rural and semi-urban areas. It requires no onboarding friction, no app store, and works on the cheapest Android phone with a data plan.
 
-**Caregiver Wellness Check**
+Every other solution in this space requires a dedicated app, a wearable device, or a trained nurse. KAI requires only a phone number.
 
-Every 3 days, following the vital log, KAI asks the caregiver how they are doing (3 options: okay / tired / struggling). Each response triggers a tailored reply. If the caregiver is struggling, KAI encourages family support redistribution and reminds them that their wellbeing is part of the patient's care.
+---
 
-**Bahasa Malaysia Support**
+## 3. How It Works
 
-Language is selected during onboarding. From that point, every message KAI sends — check-in questions, feedback, summaries, triage verdicts, escalation menus — is delivered in the caregiver's chosen language. The AI model (Gemini 2.5 Flash) handles Bahasa Malaysia natively with no translation layer.
+### Onboarding (One Time, ~2 Minutes)
+
+When a caregiver messages KAI for the first time, a guided 8-step setup captures:
+
+- Language preference (English or Bahasa Malaysia)
+- Caregiver name and relationship to patient
+- Patient name, age, and primary condition (Diabetes, Hypertension, Stroke recovery, Dementia)
+- Current medication list
+- Preferred daily check-in times
+
+All data is stored securely in Firebase Firestore and used to personalise every subsequent interaction.
+
+---
+
+### Daily Check-In Flow
+
+At the caregiver's configured times, KAI initiates a structured check-in via WhatsApp:
+
+```
+Hi Sarah 👋
+Let's check on Bobby today.
+
+1️⃣ Has Bobby taken their medication?
+Reply YES or NO
+```
+
+Three questions are asked in sequence:
+
+| Question | Purpose |
+|---|---|
+| Medication taken? | Track adherence; trigger advice if missed |
+| Meals eaten? | Monitor nutrition; prompt intervention if skipped |
+| Any concerns today? | Open the door to AI triage if YES |
+
+Each NO answer triggers **specific, actionable advice** — not generic reminders. A missed medication response references the patient's actual medications by name.
+
+---
+
+### Care Score
+
+At the end of every check-in, KAI calculates a daily Care Score:
+
+```
+📊 Bobby's Care Score Today: 85/100
+
+• Medication: ✅
+• Meals: ⚠️
+• Concerns: None 👍
+
+Status: Slightly at risk 🟡
+```
+
+| Score | Status |
+|---|---|
+| 100 | All good 💚 |
+| 80–99 | Slightly at risk 🟡 |
+| 50–79 | Needs attention ⚠️ |
+| 0–49 | High risk 🔴 |
+
+---
+
+### Vital Sign Logging
+
+After the Care Score, KAI asks for one condition-specific vital reading:
+
+- **Diabetes** → Blood sugar (mmol/L)
+- **Hypertension** → Blood pressure (e.g., 130/85)
+- **Stroke / Dementia** → Condition score 1–5
+
+Readings are stored daily and analysed for trends. KAI alerts the caregiver when readings are outside safe ranges or rising for three consecutive days:
+
+```
+📈 Bobby's blood pressure has risen for 3 consecutive days.
+Consider a clinic visit before this becomes urgent.
+```
+
+---
+
+### Health Memory & Pattern Detection
+
+KAI scans the last 7 days of check-in history before every session. If concerning patterns are detected, they surface at the start of the check-in:
+
+```
+I noticed:
+💊 Bobby missed medication 3x this week
+🍽️ Bobby skipped meals 2x this week
+
+Let's check in today 👇
+```
+
+When patterns cross a risk threshold, KAI triggers a structured escalation:
+
+```
+⚠️ KAI Insight:
+Bobby has missed medication 3 times recently.
+
+Would you like me to:
+1️⃣ Set a medication reminder
+2️⃣ Notify a family member
+3️⃣ Book a teleconsult
+
+Reply 1, 2, or 3
+```
+
+---
+
+### AI Triage — "Should I Go to A&E?"
+
+When a caregiver reports a concern, KAI does not give generic advice. It performs a **clinical triage assessment** using the patient's full profile — condition, medications, age, and the week's pattern history — and returns one of three clear verdicts:
+
+**Home Care:**
+```
+🩺 Triage: HOME CARE
+
+Sarah, Bobby's dizziness may be related to his blood pressure medication — this is manageable at home for now.
+
+✅ What to do now:
+• Have Bobby sit or lie down immediately
+• Check blood pressure — if above 160/100, proceed to clinic
+• Withhold Amlodipine until you speak to a doctor
+
+⏰ Escalate to clinic if: dizziness worsens or Bobby becomes unresponsive
+```
+
+**Clinic Today:**
+```
+🩺 Triage: CLINIC TODAY
+
+🏥 This needs a doctor but is not an emergency. Book a clinic visit today.
+• Tell the doctor: recurring chest tightness since this morning, diabetic on Metformin 500mg
+• While waiting: keep Bobby rested, avoid exertion
+
+⚠️ Go to A&E instead if: pain spreads to arm or jaw, difficulty breathing
+```
+
+**Go to A&E Now:**
+```
+🩺 Triage: GO TO A&E NOW
+
+🚨 Go to A&E immediately — do not wait.
+📋 Show this to the doctor:
+Patient: Bobby Tan, 72 — Hypertension — on Amlodipine 5mg, Metformin 500mg
+Concern: sudden confusion and slurred speech since 20 minutes ago
+🚗 While travelling: keep Bobby seated upright, do not give food or water
+```
+
+This triage decision is the **core of KAI's ED prevention mission** — it filters avoidable visits while ensuring real emergencies reach the hospital faster.
+
+---
+
+### Caregiver Wellness Check
+
+Every 3 days, KAI asks the one question no other health app asks:
+
+```
+💙 Sarah, how are YOU holding up today?
+
+1. I'm okay
+2. A bit tired
+3. Really struggling
+```
+
+Caregiver burnout is one of the leading indirect causes of patient deterioration. When caregivers are exhausted, medications get missed, symptoms go unnoticed, and ED visits increase. KAI tracks caregiver wellbeing and responds with specific, warm support — not platitudes.
+
+---
+
+### Bahasa Malaysia Support
+
+KAI detects language preference during onboarding and conducts all interactions — check-ins, triage, wellness checks, AI responses — in the caregiver's chosen language.
+
+```
+Hi Sarah 👋
+Mari kita semak Bobby hari ini.
+
+1️⃣ Adakah Bobby sudah ambil ubat?
+Balas YA atau TIDAK
+```
+
+This is powered by Gemini's native multilingual capability — no translation layer, no degraded quality. This matters in Malaysia where many primary caregivers, particularly in semi-urban and rural areas, are more comfortable communicating in Bahasa Malaysia.
+
+---
+
+### Technology Stack
+
+| Layer | Technology |
+|---|---|
+| AI Orchestration | **Google Genkit** (typed flows, trace observability) |
+| AI Model | **Gemini 2.5 Flash** on **Vertex AI** |
+| Database | **Firebase Firestore** (real-time, serverless) |
+| Messaging | **Twilio WhatsApp Business API** |
+| Runtime | Node.js + TypeScript on **Google Cloud Run** |
+
+KAI's AI logic is structured as **Genkit flows** — fully typed with Zod schemas, observable through Genkit's built-in trace viewer, and running on Vertex AI for enterprise-grade reliability. Every triage decision and AI response is a traceable, auditable flow.
 
 ---
 
 ## System Architecture High-Level Overview 🏗️
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        CAREGIVER                                │
-│                    (WhatsApp Message)                           │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   TWILIO WHATSAPP API                           │
-│              (Inbound webhook / Outbound TwiML)                 │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              EXPRESS SERVER — Google Cloud Run                  │
-│                                                                 │
-│   ┌─────────────────────┐    ┌──────────────────────────────┐  │
-│   │   STATE MACHINE     │    │      GENKIT AI FLOWS         │  │
-│   │                     │    │                              │  │
-│   │  • Onboarding       │    │  aiResponseFlow              │  │
-│   │  • Check-in steps   │◄──►│  (Assessment + Urgency +     │  │
-│   │  • Vital logging    │    │   Steps)                     │  │
-│   │  • Wellness check   │    │                              │  │
-│   │  • Escalation       │    │  triageFlow                  │  │
-│   │  • Triage routing   │    │  (Home Care / Clinic /       │  │
-│   └──────────┬──────────┘    │   A&E Now)                   │  │
-│              │               └──────────────┬───────────────┘  │
-│              │                              │                   │
-└──────────────┼──────────────────────────────┼───────────────────┘
-               │                              │
-               ▼                              ▼
-┌──────────────────────────┐   ┌──────────────────────────────────┐
-│   FIREBASE FIRESTORE     │   │      VERTEX AI (Google Cloud)    │
-│                          │   │                                  │
-│  users/{phone}           │   │  Gemini 2.5 Flash                │
-│  • Profile & language    │   │  • Multilingual (EN / BM)        │
-│  • State flags           │   │  • Triage reasoning              │
-│  • lastWellnessCheck     │   │  • Guided micro-actions          │
-│                          │   │  • Warm, human tone              │
-│  checkins/{phone_date}   │   │                                  │
-│  • medication / meals    │   │  Genkit Flow Tracing             │
-│  • concerns / vital      │   │  • Observable end-to-end         │
-│                          │   │  • Typed Zod schemas             │
-│  messages/               │   │  • Auditable AI decisions        │
-│  • Full audit log        │   │                                  │
-└──────────────────────────┘   └──────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                      CAREGIVER                          │
+│                  (WhatsApp Message)                     │
+└─────────────────────────┬───────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│               TWILIO WHATSAPP API                       │
+│          (Inbound webhook / Outbound TwiML)             │
+└─────────────────────────┬───────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│           EXPRESS SERVER — Google Cloud Run             │
+│                                                         │
+│  ┌──────────────────────┐  ┌─────────────────────────┐  │
+│  │    STATE MACHINE     │  │    GENKIT AI FLOWS      │  │
+│  │                      │  │                         │  │
+│  │  • Onboarding        │  │  aiResponseFlow         │  │
+│  │  • Check-in steps    │◄►│  (Assessment + Urgency  │  │
+│  │  • Vital logging     │  │   + Steps)              │  │
+│  │  • Wellness check    │  │                         │  │
+│  │  • Escalation        │  │  triageFlow             │  │
+│  │  • Triage routing    │  │  (Home Care / Clinic /  │  │
+│  └──────────────────────┘  │   A&E Now)              │  │
+│                            └─────────────────────────┘  │
+└──────────────┬──────────────────────────┬───────────────┘
+               │                          │
+               ▼                          ▼
+┌──────────────────────────┐  ┌───────────────────────────┐
+│   FIREBASE FIRESTORE     │  │  VERTEX AI (Google Cloud) │
+│                          │  │                           │
+│  users/{phone}           │  │  Gemini 2.5 Flash         │
+│  • Profile & language    │  │  • Multilingual (EN / BM) │
+│  • State flags           │  │  • Triage reasoning       │
+│  • lastWellnessCheck     │  │  • Guided micro-actions   │
+│                          │  │  • Warm, human tone       │
+│  checkins/{phone_date}   │  │                           │
+│  • medication / meals    │  │  Genkit Flow Tracing      │
+│  • concerns / vital      │  │  • Observable end-to-end  │
+│                          │  │  • Typed Zod schemas      │
+│  messages/               │  │  • Auditable AI decisions │
+│  • Full audit log        │  │                           │
+└──────────────────────────┘  └───────────────────────────┘
 ```
-
-| Component | Technology |
-|---|---|
-| AI Orchestration | Google Genkit (typed flows + trace observability) |
-| AI Model | Gemini 2.5 Flash on Vertex AI |
-| Database | Firebase Firestore |
-| Messaging | Twilio WhatsApp Business API |
-| Deployment | Google Cloud Run (serverless) |
-| Language | TypeScript + Node.js |
 
 ---
 
-## Impact & Why This Matters 💙
+## 4. Impact & Why This Matters
 
-**Preventing Emergency Visits Before They Happen**
+### Directly Addressing ED Overcrowding
 
-KAI intervenes at the exact moment a caregiver decides whether to go to the Emergency Department. The triage flow does not replace doctors — it answers the one question every caregiver is actually asking: *"Is this serious enough to go now?"* By giving a clear, AI-driven answer with specific home care steps, KAI prevents the visits that should never have happened.
+KAI's triage feature directly intervenes at the moment a caregiver decides whether to go to the Emergency Department. By providing a clear, AI-driven verdict — with specific home care steps or a "go to A&E now" directive — KAI converts the caregiver's uncertainty into confident, appropriate action.
 
-| Active Users | ED Visits Prevented / Month | Estimated Savings (RM 2,500/visit) |
+**If KAI prevents just 2 unnecessary ED visits per user per month:**
+
+| Users | ED Visits Prevented / Month | Cost Saved (RM 2,500/visit) |
 |---|---|---|
 | 1,000 | 2,000 | RM 5,000,000 |
 | 10,000 | 20,000 | RM 50,000,000 |
 
-**Reaching the Caregivers Who Are Actually Left Behind**
-
-KAI is not built for urban, English-speaking, tech-savvy early adopters. It is built for the daughter in Seremban, the son in Kuantan, the spouse in a kampung managing hypertension after years of following doctors' instructions without understanding them. WhatsApp access and Bahasa Malaysia support mean KAI reaches the caregivers who have no other option.
-
-**Making the Invisible Visible**
-
-Caregiver burnout, vital sign trends, weekly medication patterns — none of this data currently exists in any structured form for home-based elderly care in Malaysia. KAI generates it as a byproduct of every interaction. Over time, this data is the foundation for predictive risk scoring, proactive intervention, and evidence-based home care policy.
-
-**The Vision Beyond the Hackathon**
-
-- Predictive hospital admission risk scoring from pattern history
-- Drug interaction knowledge base via Vertex AI Agent Builder
-- Family coordination loop — daily health briefs to all registered family members
-- Integration with MySejahtera and KKiM telehealth infrastructure
-- Community health worker dashboard for district-level monitoring
-
-Every check-in KAI completes is a data point that makes elderly care in Malaysia smarter, earlier, and more human.
+And for each visit prevented, one fewer elderly patient waits 4–6 hours in an overcrowded ED — freeing capacity for those who truly need it.
 
 ---
 
-*Built for the Google AI Hackathon 2026 — powered by Google Genkit, Vertex AI, Firebase, and Twilio.*
+### Reaching Caregivers Where They Are
+
+KAI works on any smartphone with WhatsApp. There is no app to download, no account to create beyond a phone number, and no learning curve. The Bahasa Malaysia support means KAI is accessible to caregivers who have been excluded from English-first health technology.
+
+This is not a product for urban, tech-savvy early adopters. It is designed for the daughter in Seremban caring for her diabetic father, the son in Kuantan managing his mother's hypertension from a rented room — people who currently have no support system between the hospital and home.
+
+---
+
+### Caregiver Wellbeing as a Healthcare Outcome
+
+There are an estimated **3.4 million informal caregivers** in Malaysia, most of them unpaid family members. Their mental and physical health is not tracked. Their burnout is not treated. And when they collapse — emotionally or physically — their patients suffer the consequences.
+
+KAI is the only system in this space that treats caregiver wellbeing as a clinical variable. The wellness check is not a nice-to-have feature. It is a recognition that sustainable home care depends on the person doing the caring.
+
+---
+
+### The Vision
+
+KAI is a foundation. The data it collects — daily vitals, adherence patterns, symptom trends, triage outcomes — is the raw material for:
+
+- **Predictive hospital admission risk scoring** using historical pattern data
+- **Drug interaction knowledge base** via Vertex AI Agent Builder, giving caregivers access to verified medication guidance
+- **Family coordination loop** — daily health briefs sent to all registered family members, not just the primary caregiver
+- **Integration with Malaysia's public telehealth infrastructure** (MySejahtera, KKiM)
+
+Every check-in KAI completes is a data point that makes the next generation of elderly care in Malaysia smarter, earlier, and more human.
+
+---
+
+*Built for the Google AI Hackathon 2026 — powered by Google Genkit, Vertex AI, and Firebase.*
