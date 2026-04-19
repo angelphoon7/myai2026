@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express, { Request, Response } from "express";
 import { getAIResponse } from "./ai";
+import { getTriageResponse } from "./triage";
 import { db } from "./firebase";
 import { getUser, handleOnboarding } from "./onboarding";
 import { buildOpeningMessage, buildFeedback, buildSummary, scheduleCheckins, initCheckinState, CHECKIN_TOTAL } from "./checkin";
@@ -65,15 +66,24 @@ app.post("/webhook", async (req: Request, res: Response) => {
       return sendTwiml(res, responses[choice] ?? `Please reply 1, 2, or 3 to choose an option.`);
     }
 
-    // Handle concern detail → pass to AI
+    // Handle concern detail → triage assessment
     if (user.awaitingConcernDetail) {
       await db.collection("users").doc(from).update({ awaitingConcernDetail: false, checkinActive: false });
-      const aiReply = await getAIResponse(`Caregiver concern about patient ${patient}: ${incomingMsg}`, { caregiverName: caregiver, patientName: patient, condition: user.mainCondition, medications: user.medications });
+      const patterns = await getWeeklyPatterns(from);
+      const triageReply = await getTriageResponse(incomingMsg, {
+        caregiverName: caregiver,
+        patientName: patient,
+        patientAge: user.patientAge,
+        condition: user.mainCondition,
+        medications: user.medications,
+        missedMedDays: patterns.missedMedication,
+        skippedMealDays: patterns.skippedMeals,
+      });
       await db.collection("messages").add({
-        incomingMsg, aiReply, urgency: "Unknown", systemAction: "Concern flagged during check-in", from,
+        incomingMsg, aiReply: triageReply, urgency: "Unknown", systemAction: "Triage assessment", from,
         createdAt: new Date().toISOString(),
       });
-      return sendTwiml(res, aiReply);
+      return sendTwiml(res, triageReply);
     }
 
     // Handle active check-in yes/no flow
