@@ -24,13 +24,8 @@ function escapeXml(unsafe: string) {
     .replace(/'/g, "&apos;");
 }
 
-function isYes(msg: string) {
-  return /^(yes|y|1)$/i.test(msg.trim());
-}
-
-function isNo(msg: string) {
-  return /^(no|n|2)$/i.test(msg.trim());
-}
+function isYes(msg: string) { return /^(yes|y|1)$/i.test(msg.trim()); }
+function isNo(msg: string)  { return /^(no|n|2)$/i.test(msg.trim()); }
 
 function sendTwiml(res: Response, text: string) {
   res.set("Content-Type", "text/xml");
@@ -54,36 +49,35 @@ app.post("/webhook", async (req: Request, res: Response) => {
       return sendTwiml(res, reply);
     }
 
+    const caregiver = user.caregiverName ?? "there";
+    const patient = user.patientName ?? "your patient";
+
     // Handle active check-in yes/no flow
     if (user.checkinActive && (isYes(incomingMsg) || isNo(incomingMsg))) {
       const step = user.checkinStep ?? 0;
       const answer = isYes(incomingMsg) ? "YES" : "NO";
       const questionKey = ["medication", "meals", "concerns"][step];
 
-      // Save this answer
       const today = new Date().toISOString().split("T")[0];
-      const checkinRef = db.collection("checkins").doc(`${from}_${today}`);
-      await checkinRef.set({ [questionKey]: answer, phone: from, date: today }, { merge: true });
+      await db.collection("checkins").doc(`${from}_${today}`)
+        .set({ [questionKey]: answer, phone: from, date: today }, { merge: true });
 
-      const nextStep = step + 1;
+      const isLast = step + 1 >= CHECKIN_TOTAL;
+      const reply = buildFeedback(step, isYes(incomingMsg), caregiver, patient);
 
-      if (nextStep < CHECKIN_QUESTIONS.length) {
-        // Ask next question
-        await db.collection("users").doc(from).update({ checkinStep: nextStep });
-        await sendCheckinQuestion(from, user.patientName ?? "your patient", nextStep);
-        return sendTwiml(res, "");
-      } else {
-        // All questions answered
+      if (isLast) {
         await db.collection("users").doc(from).update({ checkinActive: false });
-        return sendTwiml(res, `Check-in complete for today. Thank you for caring for ${user.patientName}!`);
+      } else {
+        await db.collection("users").doc(from).update({ checkinStep: step + 1 });
       }
+
+      return sendTwiml(res, reply);
     }
 
     // Trigger check-in manually
-    if (incomingMsg.trim().toLowerCase() === '/checkin') {
+    if (incomingMsg.trim().toLowerCase() === "/checkin") {
       await initCheckinState(from);
-      const q = CHECKIN_QUESTIONS[0].replace('{patient}', user.patientName ?? 'your patient');
-      return sendTwiml(res, `KAI Check-in (1/${CHECKIN_QUESTIONS.length})\n\n${q}`);
+      return sendTwiml(res, buildOpeningMessage(caregiver, patient));
     }
 
     // Normal AI response
