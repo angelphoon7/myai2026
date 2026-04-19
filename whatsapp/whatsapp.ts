@@ -4,6 +4,7 @@ import { getAIResponse } from "./ai";
 import { db } from "./firebase";
 import { getUser, handleOnboarding } from "./onboarding";
 import { buildOpeningMessage, buildFeedback, buildSummary, scheduleCheckins, initCheckinState, CHECKIN_TOTAL } from "./checkin";
+import { getWeeklyPatterns, buildMemoryObservation } from "./memory";
 
 const app = express();
 app.use(express.urlencoded({ extended: false }));
@@ -97,7 +98,11 @@ app.post("/webhook", async (req: Request, res: Response) => {
     // Trigger check-in manually
     if (incomingMsg.trim().toLowerCase() === "/checkin") {
       await initCheckinState(from);
-      return sendTwiml(res, buildOpeningMessage(caregiver, patient));
+      const patterns = await getWeeklyPatterns(from);
+      const observation = buildMemoryObservation(patient, patterns);
+      const opening = buildOpeningMessage(caregiver, patient);
+      const fullMessage = observation ? `${observation}\n\n${opening}` : opening;
+      return sendTwiml(res, fullMessage);
     }
 
     // Normal AI response

@@ -1,0 +1,41 @@
+import { db } from "./firebase";
+
+interface PatternSummary {
+  missedMedication: number;
+  skippedMeals: number;
+  raisedConcerns: number;
+}
+
+export async function getWeeklyPatterns(phone: string): Promise<PatternSummary> {
+  const today = new Date();
+  const counts = { missedMedication: 0, skippedMeals: 0, raisedConcerns: 0 };
+
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split("T")[0];
+    const doc = await db.collection("checkins").doc(`${phone}_${dateStr}`).get();
+    if (!doc.exists) continue;
+    const data = doc.data()!;
+    if (data.medication === "NO") counts.missedMedication++;
+    if (data.meals === "NO") counts.skippedMeals++;
+    if (data.concerns === "YES") counts.raisedConcerns++;
+  }
+
+  return counts;
+}
+
+export function buildMemoryObservation(patientName: string, patterns: PatternSummary): string {
+  const notes: string[] = [];
+
+  if (patterns.missedMedication >= 2)
+    notes.push(`💊 ${patientName} missed medication ${patterns.missedMedication}x this week`);
+  if (patterns.skippedMeals >= 2)
+    notes.push(`🍽️ ${patientName} skipped meals ${patterns.skippedMeals}x this week`);
+  if (patterns.raisedConcerns >= 2)
+    notes.push(`⚠️ You raised concerns ${patterns.raisedConcerns}x this week`);
+
+  if (notes.length === 0) return "";
+
+  return `I noticed:\n${notes.join("\n")}\n\nLet's check in today 👇`;
+}
