@@ -52,6 +52,17 @@ app.post("/webhook", async (req: Request, res: Response) => {
     const caregiver = user.caregiverName ?? "there";
     const patient = user.patientName ?? "your patient";
 
+    // Handle concern detail → pass to AI
+    if (user.awaitingConcernDetail) {
+      await db.collection("users").doc(from).update({ awaitingConcernDetail: false, checkinActive: false });
+      const aiReply = await getAIResponse(`Caregiver concern about patient ${patient}: ${incomingMsg}`);
+      await db.collection("messages").add({
+        incomingMsg, aiReply, urgency: "Unknown", systemAction: "Concern flagged during check-in", from,
+        createdAt: new Date().toISOString(),
+      });
+      return sendTwiml(res, aiReply);
+    }
+
     // Handle active check-in yes/no flow
     if (user.checkinActive && (isYes(incomingMsg) || isNo(incomingMsg))) {
       const step = user.checkinStep ?? 0;
@@ -63,15 +74,17 @@ app.post("/webhook", async (req: Request, res: Response) => {
         .set({ [questionKey]: answer, phone: from, date: today }, { merge: true });
 
       const isLast = step + 1 >= CHECKIN_TOTAL;
-      const reply = buildFeedback(step, isYes(incomingMsg), caregiver, patient);
+      const result = buildFeedback(step, isYes(incomingMsg), caregiver, patient);
 
-      if (isLast) {
+      if (result.triggerAI) {
+        await db.collection("users").doc(from).update({ awaitingConcernDetail: true });
+      } else if (isLast) {
         await db.collection("users").doc(from).update({ checkinActive: false });
       } else {
         await db.collection("users").doc(from).update({ checkinStep: step + 1 });
       }
 
-      return sendTwiml(res, reply);
+      return sendTwiml(res, result.message);
     }
 
     // Trigger check-in manually

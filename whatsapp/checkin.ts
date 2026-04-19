@@ -37,20 +37,49 @@ export function buildNextQuestion(step: number, caregiverName: string, patientNa
   return QUESTIONS[step].ask(caregiverName, patientName);
 }
 
-export function buildFeedback(step: number, isYes: boolean, caregiverName: string, patientName: string): string {
-  const q = QUESTIONS[step];
-  const feedback = isYes ? q.yes : q.no;
+export type FeedbackResult = {
+  message: string;
+  triggerAI?: boolean;  // concerns = YES → hand off to AI
+};
+
+export function buildFeedback(step: number, isYes: boolean, caregiverName: string, patientName: string): FeedbackResult {
   const isLast = step === QUESTIONS.length - 1;
 
-  if (isLast) {
-    const closing = isYes
-      ? `${feedback}\n\nPlease share what's on your mind and I'll help you assess the situation.`
-      : `All good! You're doing an amazing job, ${caregiverName} 💙\n${patientName} is lucky to have you.\n\nCheck-in complete for today ✅`;
-    return closing;
+  // Medication NO
+  if (step === 0 && !isYes) {
+    const nextQ = QUESTIONS[1].ask(caregiverName, patientName);
+    return {
+      message: `⚠️ It looks like ${patientName} may have missed medication.\n\nRecommended:\n• Give medication if safe to do so\n• If unsure, check prescription or contact doctor\n\nI can remind you again in 1 hour if needed.\n\n${nextQ}`,
+    };
   }
 
+  // Meals NO
+  if (step === 1 && !isYes) {
+    const nextQ = QUESTIONS[2].ask(caregiverName, patientName);
+    return {
+      message: `⚠️ ${patientName} hasn't eaten today.\n\nSuggested:\n• Offer light foods (soup, porridge)\n• Encourage small frequent meals\n\nMonitor closely if this continues.\n\n${nextQ}`,
+    };
+  }
+
+  // Concerns YES → trigger AI
+  if (isLast && isYes) {
+    return {
+      message: `I hear you 💙 What concerns are you noticing about ${patientName}?\n\nDescribe what's happening and I'll help you assess.`,
+      triggerAI: true,
+    };
+  }
+
+  // Concerns NO → wrap up
+  if (isLast && !isYes) {
+    return {
+      message: `All good! You're doing an amazing job, ${caregiverName} 💙\n${patientName} is lucky to have you.\n\nCheck-in complete for today ✅`,
+    };
+  }
+
+  // Default: positive feedback + next question
+  const feedback = isYes ? QUESTIONS[step].yes : QUESTIONS[step].no ?? "";
   const nextQ = QUESTIONS[step + 1].ask(caregiverName, patientName);
-  return `${feedback}\n\n${nextQ}`;
+  return { message: `${feedback}\n\n${nextQ}` };
 }
 
 export const CHECKIN_TOTAL = QUESTIONS.length;

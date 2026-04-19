@@ -11,6 +11,7 @@ export interface UserProfile {
   checkinActive?: boolean;
   checkinStep?: number;
   checkinDate?: string;
+  awaitingConcernDetail?: boolean;
   onboarded: boolean;
   step: number;
 }
