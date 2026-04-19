@@ -44,14 +44,23 @@ export type FeedbackResult = {
 };
 
 export function buildSummary(caregiverName: string, patientName: string, data: Record<string, string>): string {
-  const med = data.medication === "YES" ? "Taken ✅" : "Missed ⚠️";
-  const meals = data.meals === "YES" ? "Taken ✅" : "Skipped ⚠️";
-  const concerns = data.concerns === "YES" ? "Flagged 🔴" : "None 👍";
+  const medOk = data.medication === "YES";
+  const mealsOk = data.meals === "YES";
+  const noConcerns = data.concerns !== "YES";
 
-  const hasIssue = data.medication === "NO" || data.meals === "NO";
-  const status = hasIssue ? "Needs attention ⚠️" : "Stable 💚";
+  const score = (medOk ? 50 : 0) + (mealsOk ? 15 : 0) + (noConcerns ? 35 : 0);
 
-  return `✅ Daily Summary for ${patientName}:\n\n• Medication: ${med}\n• Meals: ${meals}\n• Concerns: ${concerns}\n\nOverall status: ${status}\n\nI'll continue monitoring, ${caregiverName}. Let me know anytime if something changes 💙`;
+  let status: string;
+  if (score === 100) status = "All good 💚";
+  else if (score >= 80) status = "Slightly at risk 🟡";
+  else if (score >= 50) status = "Needs attention ⚠️";
+  else status = "High risk 🔴";
+
+  const med = medOk ? "✅" : "⚠️";
+  const meals = mealsOk ? "✅" : "⚠️";
+  const concerns = noConcerns ? "None 👍" : "Flagged 🔴";
+
+  return `📊 ${patientName}'s Care Score Today: ${score}/100\n\n• Medication: ${med}\n• Meals: ${meals}\n• Concerns: ${concerns}\n\nStatus: ${status}\n\nI'll continue monitoring, ${caregiverName}. Let me know anytime if something changes 💙`;
 }
 
 export function buildFeedback(step: number, isYes: boolean, caregiverName: string, patientName: string): FeedbackResult {
