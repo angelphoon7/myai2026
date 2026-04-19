@@ -55,7 +55,7 @@ app.post("/webhook", async (req: Request, res: Response) => {
     // Handle concern detail → pass to AI
     if (user.awaitingConcernDetail) {
       await db.collection("users").doc(from).update({ awaitingConcernDetail: false, checkinActive: false });
-      const aiReply = await getAIResponse(`Caregiver concern about patient ${patient}: ${incomingMsg}`);
+      const aiReply = await getAIResponse(`Caregiver concern about patient ${patient}: ${incomingMsg}`, { caregiverName: caregiver, patientName: patient, condition: user.mainCondition });
       await db.collection("messages").add({
         incomingMsg, aiReply, urgency: "Unknown", systemAction: "Concern flagged during check-in", from,
         createdAt: new Date().toISOString(),
@@ -94,7 +94,7 @@ app.post("/webhook", async (req: Request, res: Response) => {
     }
 
     // Normal AI response
-    const aiReply = await getAIResponse(incomingMsg);
+    const aiReply = await getAIResponse(incomingMsg, { caregiverName: caregiver, patientName: patient, condition: user.mainCondition });
     console.log("AI reply:", aiReply);
 
     const urgency = extractUrgency(aiReply);
