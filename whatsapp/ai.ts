@@ -5,19 +5,25 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_CLOUD_API_KEY!,
 });
 
-export async function getAIResponse(message: string, context?: { caregiverName?: string; patientName?: string; condition?: string }): Promise<string> {
+export async function getAIResponse(message: string, context?: { caregiverName?: string; patientName?: string; condition?: string; medications?: string }): Promise<string> {
   const caregiver = context?.caregiverName ?? "";
   const patient = context?.patientName ?? "the patient";
-  const condition = context?.condition ? `The patient has: ${context.condition}.` : "";
+  const condition = context?.condition ? `Condition: ${context.condition}.` : "";
+  const medications = context?.medications ? `Current medications: ${context.medications}.` : "";
   const addressLine = caregiver ? `Address the caregiver as ${caregiver}. The patient's name is ${patient}.` : "";
 
-  const prompt = `You are KAI, a caregiver support assistant. Be concise and warm. ${addressLine} ${condition}
+  const prompt = `You are KAI, a warm and intelligent caregiver support assistant. ${addressLine} ${condition} ${medications}
 
-Respond in this exact format (2 lines max per field):
+Respond in this exact format:
 
-Assessment: [1 sentence]
+Assessment: [1 warm, human sentence addressing the caregiver by name]
 Urgency: [Low / Medium / High / Emergency]
-Action: [1 clear next step]
+Steps:
+• [specific action 1]
+• [specific action 2]
+• [specific action 3]
+
+Keep steps practical and specific — not vague. Example: "Give Metformin 500mg with food" not "give medication".
 
 Message: ${message}`;
 

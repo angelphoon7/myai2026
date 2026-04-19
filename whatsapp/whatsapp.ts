@@ -68,7 +68,7 @@ app.post("/webhook", async (req: Request, res: Response) => {
     // Handle concern detail → pass to AI
     if (user.awaitingConcernDetail) {
       await db.collection("users").doc(from).update({ awaitingConcernDetail: false, checkinActive: false });
-      const aiReply = await getAIResponse(`Caregiver concern about patient ${patient}: ${incomingMsg}`, { caregiverName: caregiver, patientName: patient, condition: user.mainCondition });
+      const aiReply = await getAIResponse(`Caregiver concern about patient ${patient}: ${incomingMsg}`, { caregiverName: caregiver, patientName: patient, condition: user.mainCondition, medications: user.medications });
       await db.collection("messages").add({
         incomingMsg, aiReply, urgency: "Unknown", systemAction: "Concern flagged during check-in", from,
         createdAt: new Date().toISOString(),
@@ -113,6 +113,13 @@ app.post("/webhook", async (req: Request, res: Response) => {
       return sendTwiml(res, result.message);
     }
 
+    // Update medication list
+    if (incomingMsg.trim().toLowerCase().startsWith("/updatemeds ")) {
+      const meds = incomingMsg.trim().slice(12).trim();
+      await db.collection("users").doc(from).update({ medications: meds });
+      return sendTwiml(res, `💊 Medication list updated for ${patient}:\n${meds}\n\nI'll use this in all future assessments.`);
+    }
+
     // Trigger check-in manually
     if (incomingMsg.trim().toLowerCase() === "/checkin") {
       await initCheckinState(from);
@@ -124,7 +131,7 @@ app.post("/webhook", async (req: Request, res: Response) => {
     }
 
     // Normal AI response
-    const aiReply = await getAIResponse(incomingMsg, { caregiverName: caregiver, patientName: patient, condition: user.mainCondition });
+    const aiReply = await getAIResponse(incomingMsg, { caregiverName: caregiver, patientName: patient, condition: user.mainCondition, medications: user.medications });
     console.log("AI reply:", aiReply);
 
     const urgency = extractUrgency(aiReply);

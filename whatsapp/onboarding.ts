@@ -7,6 +7,7 @@ export interface UserProfile {
   patientName?: string;
   patientAge?: string;
   mainCondition?: string;
+  medications?: string;
   checkInTime?: string;
   checkinActive?: boolean;
   checkinStep?: number;
@@ -23,7 +24,8 @@ const STEPS: Record<number, string> = {
   2: `What is the patient's name?`,
   3: `How old is the patient?`,
   4: `What is the main condition?\n\n1. Diabetes\n2. Hypertension\n3. Stroke recovery\n4. Dementia\n5. Other`,
-  5: `What time should I check in daily?\nExample: 9am and 6pm`,
+  5: `What medications is the patient currently taking?\nExample: Metformin 500mg, Amlodipine 5mg\n\nOr type "None" to skip.`,
+  6: `What time should I check in daily?\nExample: 9am and 6pm`,
 };
 
 const RELATIONSHIP_MAP: Record<string, string> = {
@@ -86,12 +88,22 @@ export async function handleOnboarding(phone: string, message: string): Promise<
   }
 
   if (step === 6) {
-    update.checkInTime = message.trim();
+    const meds = message.trim().toLowerCase() === "none" ? "" : message.trim();
+    update.medications = meds;
     update.step = 7;
+    await db.collection("users").doc(phone).update(update);
+    return STEPS[6];
+  }
+
+  if (step === 7) {
+    update.checkInTime = message.trim();
     update.onboarded = true;
     await db.collection("users").doc(phone).update(update);
     const profile = { ...user, ...update };
-    return `Setup complete, ${profile.caregiverName}! I'll start monitoring ${profile.patientName} from today.`;
+    const medLine = profile.medications
+      ? `\n💊 I've noted the medications: ${profile.medications}`
+      : "";
+    return `Setup complete, ${profile.caregiverName}! I'll start monitoring ${profile.patientName} from today.${medLine}`;
   }
 
   return "";
