@@ -13,6 +13,7 @@ export interface TriageContext {
   medications?: string;
   missedMedDays?: number;
   skippedMealDays?: number;
+  language?: "en" | "ms";
 }
 
 export async function getTriageResponse(concern: string, ctx: TriageContext): Promise<string> {
@@ -20,8 +21,9 @@ export async function getTriageResponse(concern: string, ctx: TriageContext): Pr
   if ((ctx.missedMedDays ?? 0) >= 1) patternNotes.push(`missed medication ${ctx.missedMedDays}x this week`);
   if ((ctx.skippedMealDays ?? 0) >= 1) patternNotes.push(`skipped meals ${ctx.skippedMealDays}x this week`);
   const patternLine = patternNotes.length > 0 ? `Recent pattern: ${patternNotes.join(", ")}.` : "";
+  const langLine = ctx.language === "ms" ? "Respond entirely in Bahasa Malaysia." : "Respond in English.";
 
-  const prompt = `You are KAI, a medical triage assistant helping home caregivers in Malaysia decide whether to manage at home, visit a clinic, or go to A&E. Malaysia's public hospitals are overcrowded — only escalate to A&E when truly necessary.
+  const prompt = `You are KAI, a medical triage assistant helping home caregivers in Malaysia decide whether to manage at home, visit a clinic, or go to A&E. Malaysia's public hospitals are overcrowded — only escalate to A&E when truly necessary. ${langLine}
 
 Caregiver: ${ctx.caregiverName}
 Patient: ${ctx.patientName}, Age: ${ctx.patientAge ?? "elderly"}
