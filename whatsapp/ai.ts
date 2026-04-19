@@ -1,22 +1,26 @@
-import { GoogleGenAI } from '@google/genai';
+import { z } from 'genkit';
+import { ai } from './genkit';
 
-const ai = new GoogleGenAI({
-  vertexai: true,
-  apiKey: process.env.GOOGLE_CLOUD_API_KEY!,
+const AIInput = z.object({
+  message: z.string(),
+  caregiverName: z.string().optional(),
+  patientName: z.string().optional(),
+  condition: z.string().optional(),
+  medications: z.string().optional(),
+  language: z.enum(['en', 'ms']).optional(),
 });
 
-export async function getAIResponse(
-  message: string,
-  context?: { caregiverName?: string; patientName?: string; condition?: string; medications?: string; language?: "en" | "ms" }
-): Promise<string> {
-  const caregiver = context?.caregiverName ?? "";
-  const patient = context?.patientName ?? "the patient";
-  const condition = context?.condition ? `Condition: ${context.condition}.` : "";
-  const medications = context?.medications ? `Current medications: ${context.medications}.` : "";
-  const addressLine = caregiver ? `Address the caregiver as ${caregiver}. The patient's name is ${patient}.` : "";
-  const langLine = context?.language === "ms" ? "Respond entirely in Bahasa Malaysia." : "Respond in English.";
+const aiResponseFlow = ai.defineFlow(
+  { name: 'aiResponse', inputSchema: AIInput, outputSchema: z.string() },
+  async (input) => {
+    const caregiver = input.caregiverName ?? '';
+    const patient = input.patientName ?? 'the patient';
+    const condition = input.condition ? `Condition: ${input.condition}.` : '';
+    const medications = input.medications ? `Current medications: ${input.medications}.` : '';
+    const addressLine = caregiver ? `Address the caregiver as ${caregiver}. The patient's name is ${patient}.` : '';
+    const langLine = input.language === 'ms' ? 'Respond entirely in Bahasa Malaysia.' : 'Respond in English.';
 
-  const prompt = `You are KAI, a warm and intelligent caregiver support assistant. ${addressLine} ${condition} ${medications} ${langLine}
+    const prompt = `You are KAI, a warm and intelligent caregiver support assistant. ${addressLine} ${condition} ${medications} ${langLine}
 
 Respond in this exact format:
 
@@ -29,12 +33,20 @@ Steps:
 
 Keep steps practical and specific — not vague. Example: "Give Metformin 500mg with food" not "give medication".
 
-Message: ${message}`;
+Message: ${input.message}`;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-lite',
-    contents: prompt,
-  });
+    const response = await ai.generate({
+      model: 'vertexai/gemini-2.5-flash-lite-preview-06-17',
+      prompt,
+    });
 
-  return response.text ?? '';
+    return response.text ?? '';
+  }
+);
+
+export async function getAIResponse(
+  message: string,
+  context?: { caregiverName?: string; patientName?: string; condition?: string; medications?: string; language?: 'en' | 'ms' }
+): Promise<string> {
+  return aiResponseFlow({ message, ...context });
 }
