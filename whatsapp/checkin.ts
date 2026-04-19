@@ -39,8 +39,20 @@ export function buildNextQuestion(step: number, caregiverName: string, patientNa
 
 export type FeedbackResult = {
   message: string;
-  triggerAI?: boolean;  // concerns = YES → hand off to AI
+  triggerAI?: boolean;
+  showSummary?: boolean;
 };
+
+export function buildSummary(caregiverName: string, patientName: string, data: Record<string, string>): string {
+  const med = data.medication === "YES" ? "Taken ✅" : "Missed ⚠️";
+  const meals = data.meals === "YES" ? "Taken ✅" : "Skipped ⚠️";
+  const concerns = data.concerns === "YES" ? "Flagged 🔴" : "None 👍";
+
+  const hasIssue = data.medication === "NO" || data.meals === "NO";
+  const status = hasIssue ? "Needs attention ⚠️" : "Stable 💚";
+
+  return `✅ Daily Summary for ${patientName}:\n\n• Medication: ${med}\n• Meals: ${meals}\n• Concerns: ${concerns}\n\nOverall status: ${status}\n\nI'll continue monitoring, ${caregiverName}. Let me know anytime if something changes 💙`;
+}
 
 export function buildFeedback(step: number, isYes: boolean, caregiverName: string, patientName: string): FeedbackResult {
   const isLast = step === QUESTIONS.length - 1;
@@ -69,11 +81,9 @@ export function buildFeedback(step: number, isYes: boolean, caregiverName: strin
     };
   }
 
-  // Concerns NO → wrap up
+  // Concerns NO → return signal to show summary
   if (isLast && !isYes) {
-    return {
-      message: `All good! You're doing an amazing job, ${caregiverName} 💙\n${patientName} is lucky to have you.\n\nCheck-in complete for today ✅`,
-    };
+    return { message: "", showSummary: true };
   }
 
   // Default: positive feedback + next question

@@ -3,7 +3,7 @@ import express, { Request, Response } from "express";
 import { getAIResponse } from "./ai";
 import { db } from "./firebase";
 import { getUser, handleOnboarding } from "./onboarding";
-import { buildOpeningMessage, buildFeedback, scheduleCheckins, initCheckinState, CHECKIN_TOTAL } from "./checkin";
+import { buildOpeningMessage, buildFeedback, buildSummary, scheduleCheckins, initCheckinState, CHECKIN_TOTAL } from "./checkin";
 
 const app = express();
 app.use(express.urlencoded({ extended: false }));
@@ -78,6 +78,13 @@ app.post("/webhook", async (req: Request, res: Response) => {
 
       if (result.triggerAI) {
         await db.collection("users").doc(from).update({ awaitingConcernDetail: true });
+        return sendTwiml(res, result.message);
+      } else if (result.showSummary) {
+        await db.collection("users").doc(from).update({ checkinActive: false });
+        const today = new Date().toISOString().split("T")[0];
+        const checkinDoc = await db.collection("checkins").doc(`${from}_${today}`).get();
+        const data = (checkinDoc.data() ?? {}) as Record<string, string>;
+        return sendTwiml(res, buildSummary(caregiver, patient, data));
       } else if (isLast) {
         await db.collection("users").doc(from).update({ checkinActive: false });
       } else {
