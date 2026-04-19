@@ -3,7 +3,7 @@ import express, { Request, Response } from "express";
 import { getAIResponse } from "./ai";
 import { db } from "./firebase";
 import { getUser, handleOnboarding } from "./onboarding";
-import { CHECKIN_QUESTIONS, sendCheckinQuestion, scheduleCheckins, initCheckinState } from "./checkin";
+import { buildOpeningMessage, buildFeedback, scheduleCheckins, initCheckinState, CHECKIN_TOTAL } from "./checkin";
 
 const app = express();
 app.use(express.urlencoded({ extended: false }));
