@@ -257,7 +257,7 @@ This is powered by Gemini's native multilingual capability — no translation la
 | Layer | Technology |
 |---|---|
 | AI Orchestration | **Google Genkit** (typed flows, trace observability) |
-| AI Model | **Gemini 2.5 Flash** on **Vertex AI** |
+| AI Model | **Gemini 2.0 Flash** via **Google AI (Gemini API)** |
 | Database | **Firebase Firestore** (real-time, serverless) |
 | Messaging | **Twilio WhatsApp Business API** |
 | Runtime | Node.js + TypeScript on **Google Cloud Run** |

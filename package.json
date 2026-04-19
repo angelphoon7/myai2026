@@ -10,6 +10,8 @@
     "backend": "npx ts-node --project tsconfig.backend.json whatsapp/whatsapp.ts"
   },
   "dependencies": {
+    "@genkit-ai/google-genai": "^1.32.0",
+    "@genkit-ai/googleai": "^1.28.0",
     "@genkit-ai/vertexai": "^1.32.0",
     "@google-cloud/firestore": "^8.5.0",
     "@types/node-cron": "^3.0.11",
@@ -37,6 +39,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "genkit-cli": "^1.32.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
