@@ -1,4 +1,6 @@
 import { ai } from './genkit';
+import { getMedicalContext } from './medical-api';
+import { analyzeWithCloudVision, buildVisionContext } from './cloud-vision';
 
 type Lang = "en" | "ms";
 
@@ -19,15 +21,29 @@ export async function downloadTwilioImage(
     `${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`
   ).toString("base64");
 
+  console.log("Downloading Twilio image:", mediaUrl.substring(0, 60) + "...");
+
   const response = await fetch(mediaUrl, {
     headers: { Authorization: `Basic ${auth}` },
+    redirect: "follow",
   });
 
-  if (!response.ok) throw new Error(`Image download failed: ${response.status}`);
+  console.log("Download status:", response.status, "type:", response.headers.get("content-type"));
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Image download failed: ${response.status} ${body.substring(0, 100)}`);
+  }
 
   const arrayBuffer = await response.arrayBuffer();
+  if (arrayBuffer.byteLength === 0) throw new Error("Downloaded image is empty");
+
+  console.log("Downloaded bytes:", arrayBuffer.byteLength);
+
   const base64 = Buffer.from(arrayBuffer).toString("base64");
-  const mimeType = response.headers.get("content-type") || "image/jpeg";
+  // Strip charset and extra params from content-type: "image/jpeg; charset=utf-8" → "image/jpeg"
+  const rawType = response.headers.get("content-type") || "image/jpeg";
+  const mimeType = rawType.split(";")[0].trim();
   return { base64, mimeType };
 }
 
@@ -43,6 +59,15 @@ export async function analyzeImage(
     ? `Caregiver's note: "${ctx.caption}"`
     : "No caption — analyze the image directly.";
 
+  // Run Cloud Vision in parallel with prompt construction — non-blocking if it fails
+  let visionContext = "";
+  try {
+    const cvResult = await analyzeWithCloudVision(imageBase64);
+    visionContext = buildVisionContext(cvResult);
+  } catch (e) {
+    console.warn("Cloud Vision unavailable, proceeding with Gemini only:", e);
+  }
+
   const promptText = `You are KAI Eyes, a visual medical triage assistant for home caregivers in Malaysia. ${langLine}
 
 Patient context:
@@ -51,7 +76,7 @@ Patient context:
 - Current medications: ${ctx.medications ?? "not specified"}
 - Caregiver: ${ctx.caregiverName}
 - ${captionLine}
-
+${visionContext ? `\n${visionContext}\nUse the above machine-verified data (OCR text, detected labels, objects) to ground your analysis. Treat extracted text and object labels as confirmed facts.\n` : ""}
 STEP 1 — Classify this image into ONE category:
 • WOUND_SKIN — wound, cut, burn, bruise, rash, pressure sore, swelling, edema, skin discoloration
 • MEDICATION — pills, tablets, capsules, medication bottle, blister pack, prescription label
@@ -152,5 +177,19 @@ Visual concern: [1 line clinical summary of the finding]
     ],
   });
 
-  return response.text ?? "";
+  let result = response.text ?? "";
+
+  // If Gemini identified a medication, enrich with OpenFDA + RxNav data
+  const identifiedMatch = result.match(/Identified:\s*(.+?)(?:\n|$)/);
+  if (identifiedMatch) {
+    const identifiedDrug = identifiedMatch[1].trim();
+    const medContext = await getMedicalContext(
+      identifiedDrug,
+      ctx.medications ?? "",
+      lang
+    );
+    if (medContext) result += medContext;
+  }
+
+  return result;
 }

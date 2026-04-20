@@ -8,6 +8,7 @@ import { buildOpeningMessage, buildFeedback, buildSummary, buildVitalQuestion, s
 import { getWeeklyPatterns, getVitalReadings, analyzeVitalTrend, buildMemoryObservation, buildEscalationAlert, shouldEscalate, shouldWarnBurnout, buildWeeklySummaryMessage } from "./memory";
 import { shouldAskWellness, buildWellnessCheck, buildWellnessResponse } from "./wellness";
 import { sendWhatsApp } from "./notify";
+import { checkDrugInteractions, formatInteractionWarnings } from "./medical-api";
 import { downloadTwilioImage, analyzeImage } from "./vision";
 
 const DOCTORONCALL = "https://www.doctoroncall.com.my";
@@ -86,61 +87,67 @@ app.post("/webhook", async (req: Request, res: Response) => {
     const patient = user.patientName ?? "your patient";
     const lang = user.language ?? "en";
 
-    // Photo triage — KAI Eyes (handle before all state checks so photos always get analyzed)
+    // Photo triage — KAI Eyes (respond immediately to beat Twilio's 15s timeout, process async)
     const numMedia = parseInt(req.body.NumMedia || "0", 10);
     console.log("NumMedia:", numMedia, "| Body:", incomingMsg);
     if (numMedia > 0) {
       const mediaUrl: string = req.body.MediaUrl0;
       const mediaType: string = req.body.MediaContentType0 || "image/jpeg";
+      const caption = incomingMsg.trim() || undefined;
 
-      try {
-        const { base64, mimeType } = await downloadTwilioImage(mediaUrl);
-        const visionReply = await analyzeImage(
-          {
-            caregiverName: caregiver,
-            patientName: patient,
-            patientAge: user.patientAge,
-            condition: user.mainCondition,
-            medications: user.medications,
-            language: lang,
-            caption: incomingMsg.trim() || undefined,
-          },
-          base64,
-          mimeType
-        );
+      // Acknowledge immediately — analysis runs in background
+      const ack = lang === "ms"
+        ? `👁️ KAI Eyes sedang menganalisis gambar anda... Keputusan akan dihantar dalam beberapa saat.`
+        : `👁️ KAI Eyes is analyzing your photo... Results will arrive in a few seconds.`;
+      sendTwiml(res, ack);
 
-        if (visionReply.includes("GO TO A&E NOW") || visionReply.includes("KE A&E SEKARANG")) {
-          const aeAlert = lang === "ms"
-            ? `🚨 KAI Eyes Alert\n\n${caregiver} telah menghantar gambar dan dinasihatkan ke A&E dengan segera untuk ${patient}.\n\nSila hubungi mereka sekarang.`
-            : `🚨 KAI Eyes Alert\n\n${caregiver} sent a photo and has been advised to take ${patient} to A&E immediately.\n\nPlease call them now.`;
-          await notifyFamily(user, aeAlert);
+      // Process async — send result via Twilio API (not webhook response)
+      setImmediate(async () => {
+        try {
+          const { base64, mimeType } = await downloadTwilioImage(mediaUrl);
+          const visionReply = await analyzeImage(
+            {
+              caregiverName: caregiver,
+              patientName: patient,
+              patientAge: user.patientAge,
+              condition: user.mainCondition,
+              medications: user.medications,
+              language: lang,
+              caption,
+            },
+            base64,
+            mimeType
+          );
+
+          await sendWhatsApp(from, visionReply);
+
+          if (visionReply.includes("GO TO A&E NOW") || visionReply.includes("KE A&E SEKARANG")) {
+            const aeAlert = lang === "ms"
+              ? `🚨 KAI Eyes Alert\n\n${caregiver} telah menghantar gambar dan dinasihatkan ke A&E dengan segera untuk ${patient}.\n\nSila hubungi mereka sekarang.`
+              : `🚨 KAI Eyes Alert\n\n${caregiver} sent a photo and has been advised to take ${patient} to A&E immediately.\n\nPlease call them now.`;
+            await notifyFamily(user, aeAlert);
+          }
+
+          if (visionReply.includes("⚠️ Mismatch") || visionReply.includes("not on") || visionReply.includes("Do not give")) {
+            const medAlert = lang === "ms"
+              ? `💊 KAI Eyes — Amaran Ubat\n\n${caregiver} mengimbas ubat untuk ${patient} dan terdapat kemungkinan ketidakpadanan. Sila semak segera.`
+              : `💊 KAI Eyes — Medication Alert\n\n${caregiver} scanned a medication for ${patient} and a possible mismatch was detected. Please verify immediately.`;
+            await notifyFamily(user, medAlert);
+          }
+
+          await db.collection("messages").add({
+            type: "vision", mediaUrl, mediaType,
+            caption: caption ?? null, aiReply: visionReply, from,
+            createdAt: new Date().toISOString(),
+          });
+        } catch (err: any) {
+          console.error("Vision analysis failed:", err);
+          // Send actual error for debugging
+          await sendWhatsApp(from, `[DEBUG] Vision failed: ${err.message?.substring(0, 200) ?? String(err).substring(0, 200)}`);
         }
+      });
 
-        if (visionReply.includes("⚠️ Mismatch") || visionReply.includes("not on") || visionReply.includes("Do not give")) {
-          const medAlert = lang === "ms"
-            ? `💊 KAI Eyes — Amaran Ubat\n\n${caregiver} telah mengimbas ubat untuk ${patient} dan terdapat kemungkinan ketidakpadanan.\n\nSila semak segera.`
-            : `💊 KAI Eyes — Medication Alert\n\n${caregiver} scanned a medication for ${patient} and a possible mismatch was detected.\n\nPlease verify immediately.`;
-          await notifyFamily(user, medAlert);
-        }
-
-        await db.collection("messages").add({
-          type: "vision",
-          mediaUrl,
-          mediaType,
-          caption: incomingMsg.trim() || null,
-          aiReply: visionReply,
-          from,
-          createdAt: new Date().toISOString(),
-        });
-
-        return sendTwiml(res, visionReply);
-      } catch (err) {
-        console.error("Vision analysis failed:", err);
-        const fallback = lang === "ms"
-          ? `Maaf, saya tidak dapat menganalisis gambar itu. Sila huraikan gejala dalam teks dan saya akan bantu.`
-          : `Sorry, I couldn't analyze that image. Please describe the symptom in text and I'll help assess.`;
-        return sendTwiml(res, fallback);
-      }
+      return;
     }
 
     // Handle escalation choice 1/2/3
@@ -330,12 +337,22 @@ app.post("/webhook", async (req: Request, res: Response) => {
     }
 
     // Update medication list
+    if (incomingMsg.trim().toLowerCase() === "/updatemeds") {
+      return sendTwiml(res, lang === "ms"
+        ? `💊 Sila nyatakan senarai ubat selepas arahan.\n\nContoh:\n/updatemeds Metformin 500mg, Amlodipine 5mg, Insulin glulisine 100IU`
+        : `💊 Please list the medications after the command.\n\nExample:\n/updatemeds Metformin 500mg, Amlodipine 5mg, Insulin glulisine 100IU`);
+    }
     if (incomingMsg.trim().toLowerCase().startsWith("/updatemeds ")) {
       const meds = incomingMsg.trim().slice(12).trim();
       await db.collection("users").doc(from).update({ medications: meds });
-      return sendTwiml(res, lang === "ms"
+
+      const base = lang === "ms"
         ? `💊 Senarai ubat dikemaskini untuk ${patient}:\n${meds}\n\nSaya akan gunakannya dalam semua penilaian akan datang.`
-        : `💊 Medication list updated for ${patient}:\n${meds}\n\nI'll use this in all future assessments.`);
+        : `💊 Medication list updated for ${patient}:\n${meds}\n\nI'll use this in all future assessments.`;
+
+      const interactions = await checkDrugInteractions(meds);
+      const interactionBlock = formatInteractionWarnings(interactions, lang);
+      return sendTwiml(res, base + interactionBlock);
     }
 
     // Trigger check-in manually
