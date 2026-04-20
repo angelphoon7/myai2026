@@ -132,7 +132,7 @@ export default function Onboarding() {
 
   return (
     <IPhone13Frame>
-      <div className="flex min-h-full flex-col relative overflow-hidden bg-slate-900">
+      <div className="flex min-h-full flex-col relative overflow-hidden bg-slate-900 font-serif">
         <div className="absolute inset-0 z-0 pointer-events-none">
           <PixelSnow 
             color="#ffffff"
@@ -405,7 +405,7 @@ export default function Onboarding() {
             {step > 1 && (
               <button
                 onClick={() => setStep(s => s - 1)}
-                className="flex h-12 flex-1 items-center justify-center rounded-xl border border-slate-700 text-sm font-medium text-gray-300 hover:bg-slate-800"
+                className="flex h-12 flex-1 items-center justify-center rounded-xl border border-slate-700 text-sm font-sans font-medium text-gray-300 hover:bg-slate-800"
               >
                 {t.back}
               </button>
@@ -413,7 +413,7 @@ export default function Onboarding() {
             {step === 9 && (
               <button
                 onClick={handleNext}
-                className="flex h-12 flex-1 items-center justify-center rounded-xl border border-slate-700 text-sm font-medium text-gray-300 hover:bg-slate-800"
+                className="flex h-12 flex-1 items-center justify-center rounded-xl border border-slate-700 text-sm font-sans font-medium text-gray-300 hover:bg-slate-800"
               >
                 {t.skip}
               </button>
@@ -421,7 +421,7 @@ export default function Onboarding() {
             <button
               onClick={handleNext}
               disabled={!canNext() || submitting}
-              className="flex h-12 flex-[2] items-center justify-center rounded-xl bg-yellow-400 text-sm font-semibold text-gray-900 shadow-sm transition-colors hover:bg-yellow-500 disabled:opacity-40"
+              className="flex h-12 flex-[2] items-center justify-center rounded-xl bg-yellow-400 text-sm font-sans font-semibold text-gray-900 shadow-sm transition-colors hover:bg-yellow-500 disabled:opacity-40"
             >
               {submitting ? "..." : step === TOTAL_STEPS ? t.finish : t.next}
             </button>
@@ -446,7 +446,7 @@ export default function Onboarding() {
                 <span className="font-mono text-lg font-bold text-gray-800">{TWILIO_NUMBER}</span>
                 <button
                   onClick={() => copyText(TWILIO_NUMBER, "number")}
-                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-yellow-600 shadow-sm border border-gray-200"
+                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-sans font-medium text-yellow-600 shadow-sm border border-gray-200"
                 >
                   {copied === "number" ? t.copied : t.copy}
                 </button>
@@ -460,7 +460,7 @@ export default function Onboarding() {
                 <span className="font-mono text-base font-bold text-gray-800">{JOIN_CODE}</span>
                 <button
                   onClick={() => copyText(JOIN_CODE, "code")}
-                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-yellow-600 shadow-sm border border-gray-200"
+                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-sans font-medium text-yellow-600 shadow-sm border border-gray-200"
                 >
                   {copied === "code" ? t.copied : t.copy}
                 </button>
