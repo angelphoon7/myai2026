@@ -135,3 +135,35 @@ export function buildEscalationAlert(patientName: string, patterns: PatternSumma
 export function shouldEscalate(patterns: PatternSummary): boolean {
   return patterns.missedMedication >= 2 || patterns.skippedMeals >= 2;
 }
+
+export function shouldWarnBurnout(patterns: PatternSummary): boolean {
+  return patterns.raisedConcerns >= 3;
+}
+
+export function buildWeeklySummaryMessage(
+  caregiverName: string,
+  patientName: string,
+  patterns: PatternSummary,
+  lang: Lang = "en"
+): string {
+  const medScore = patterns.missedMedication === 0 ? 40 : patterns.missedMedication <= 2 ? 20 : 0;
+  const mealScore = patterns.skippedMeals === 0 ? 30 : patterns.skippedMeals <= 2 ? 15 : 0;
+  const concernScore = patterns.raisedConcerns === 0 ? 30 : patterns.raisedConcerns <= 1 ? 20 : 10;
+  const score = medScore + mealScore + concernScore;
+
+  if (lang === "ms") {
+    return `📊 Laporan Mingguan KAI — ${patientName}\n\n` +
+      `• Ubat: ${patterns.missedMedication === 0 ? "✅ Tiada terlepas" : `⚠️ Terlepas ${patterns.missedMedication}x`}\n` +
+      `• Makan: ${patterns.skippedMeals === 0 ? "✅ Konsisten" : `⚠️ Langkau ${patterns.skippedMeals}x`}\n` +
+      `• Kebimbangan dilaporkan: ${patterns.raisedConcerns}x\n\n` +
+      `Skor Penjagaan Mingguan: ${score}/100\n\n` +
+      `Dijaga oleh: ${caregiverName} 💙\n_Laporan automatik daripada KAI_`;
+  }
+
+  return `📊 KAI Weekly Report — ${patientName}\n\n` +
+    `• Medication: ${patterns.missedMedication === 0 ? "✅ None missed" : `⚠️ Missed ${patterns.missedMedication}x`}\n` +
+    `• Meals: ${patterns.skippedMeals === 0 ? "✅ Consistent" : `⚠️ Skipped ${patterns.skippedMeals}x`}\n` +
+    `• Concerns reported: ${patterns.raisedConcerns}x\n\n` +
+    `Weekly Care Score: ${score}/100\n\n` +
+    `Cared for by: ${caregiverName} 💙\n_Automated report from KAI_`;
+}

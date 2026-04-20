@@ -18,14 +18,14 @@ export function buildWellnessResponse(choice: string, caregiverName: string, lan
     const responses: Record<string, string> = {
       "1": `Syukurlah, ${caregiverName} 😊 Teruskan — anda melakukan sesuatu yang luar biasa.`,
       "2": `Saya faham, ${caregiverName} 💙 Menjaga orang tersayang memang berat. Cuba ambil rehat sebentar hari ini — anda penting juga.`,
-      "3": `${caregiverName}, terima kasih kerana jujur 💙 Ini tidak mudah. Cuba minta bantuan ahli keluarga lain hari ini — anda perlu rehat untuk terus memberi penjagaan yang baik.`,
+      "3": `${caregiverName}, terima kasih kerana jujur 💙 Ini tidak mudah. Anda hadir setiap hari — itu sangat bermakna.\n\n🆘 Sumber sokongan:\n• Befrienders KL: 03-7627 2929 (24 jam)\n• MIASA: +603 2780 6803\n• Minta bantuan ahli keluarga hari ini — anda perlu rehat untuk terus memberi penjagaan terbaik.`,
     };
     return responses[choice] ?? `Sila balas 1, 2, atau 3.`;
   }
   const responses: Record<string, string> = {
     "1": `Glad to hear it, ${caregiverName} 😊 Keep going — you're doing something remarkable.`,
     "2": `I understand, ${caregiverName} 💙 Caregiving is hard. Try to take a small break today — you matter too.`,
-    "3": `${caregiverName}, thank you for being honest 💙 This is not easy. Consider asking another family member to help today — you need rest to keep caring well.`,
+    "3": `${caregiverName}, thank you for being honest 💙 This is not easy. You show up every day — that matters deeply.\n\n🆘 Support resources:\n• Befrienders KL: 03-7627 2929 (24hr)\n• MIASA: +603 2780 6803\n• Reach out to another family member today — you need rest to keep caring well.`,
   };
   return responses[choice] ?? `Please reply 1, 2, or 3.`;
 }

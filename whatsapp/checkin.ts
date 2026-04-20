@@ -1,9 +1,7 @@
 import cron from "node-cron";
-import twilio from "twilio";
 import { db } from "./firebase";
-
-const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-const FROM = "whatsapp:+14155238886";
+import { sendWhatsApp } from "./notify";
+import { getWeeklyPatterns, buildWeeklySummaryMessage } from "./memory";
 
 type Lang = "en" | "ms";
 
@@ -142,11 +140,7 @@ export function buildFeedback(step: number, isYes: boolean, caregiverName: strin
 export const CHECKIN_TOTAL = QUESTIONS.length;
 
 export async function sendCheckinQuestion(phone: string, caregiverName: string, patientName: string, questionIndex: number, lang: Lang = "en") {
-  await client.messages.create({
-    from: FROM,
-    to: phone,
-    body: QUESTIONS[questionIndex].ask(caregiverName, patientName, lang),
-  });
+  await sendWhatsApp(phone, QUESTIONS[questionIndex].ask(caregiverName, patientName, lang));
 }
 
 export async function startCheckin(phone: string, caregiverName: string, patientName: string, lang: Lang = "en") {
@@ -166,31 +160,6 @@ export async function initCheckinState(phone: string) {
   });
 }
 
-export function scheduleCheckins() {
-  cron.schedule("* * * * *", async () => {
-    const now = new Date();
-    const hourStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-    const snapshot = await db.collection("users").where("onboarded", "==", true).get();
-
-    for (const doc of snapshot.docs) {
-      const user = doc.data();
-      if (!user.checkInTime) continue;
-
-      const times = parseCheckInTimes(user.checkInTime);
-      if (!times.includes(hourStr)) continue;
-
-      const today = now.toISOString().split("T")[0];
-      if (user.checkinDate === today && user.checkinActive !== false) continue;
-
-      console.log(`Starting check-in for ${user.phone}`);
-      await startCheckin(user.phone, user.caregiverName ?? "there", user.patientName ?? "your patient", user.language ?? "en");
-    }
-  });
-
-  console.log("Check-in scheduler running");
-}
-
 function parseCheckInTimes(checkInTime: string): string[] {
   const results: string[] = [];
   const matches = checkInTime.match(/\d{1,2}(am|pm)/gi) ?? [];
@@ -200,4 +169,98 @@ function parseCheckInTimes(checkInTime: string): string[] {
     results.push(`${hour}:00`);
   }
   return results;
+}
+
+function parseReminderTimes(checkInTime: string): string[] {
+  return parseCheckInTimes(checkInTime).map(t => {
+    const [h, m] = t.split(":").map(Number);
+    const totalMin = h * 60 + m - 30;
+    if (totalMin < 0) return null;
+    return `${Math.floor(totalMin / 60)}:${String(totalMin % 60).padStart(2, "0")}`;
+  }).filter(Boolean) as string[];
+}
+
+export function scheduleCheckins() {
+  // Every-minute check-in scheduler + medication reminders + missed check-in family alert
+  cron.schedule("* * * * *", async () => {
+    const now = new Date();
+    const hourStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const today = now.toISOString().split("T")[0];
+
+    const snapshot = await db.collection("users").where("onboarded", "==", true).get();
+
+    for (const doc of snapshot.docs) {
+      const user = doc.data();
+      if (!user.checkInTime) continue;
+
+      const checkInTimes = parseCheckInTimes(user.checkInTime);
+      const reminderTimes = parseReminderTimes(user.checkInTime);
+
+      // Fire check-in
+      if (checkInTimes.includes(hourStr)) {
+        if (user.checkinDate === today && user.checkinActive !== false) continue;
+        console.log(`Starting check-in for ${user.phone}`);
+        await startCheckin(user.phone, user.caregiverName ?? "there", user.patientName ?? "your patient", user.language ?? "en");
+      }
+
+      // Medication reminder 30 min before check-in
+      if (reminderTimes.includes(hourStr) && user.medications) {
+        const lang: Lang = user.language ?? "en";
+        const reminder = lang === "ms"
+          ? `💊 Peringatan: Masa untuk ubat ${user.patientName ?? "pesakit"} akan tiba dalam 30 minit.\n\nUbat: ${user.medications}`
+          : `💊 Reminder: ${user.patientName ?? "your patient"}'s medication time is in 30 minutes.\n\nMedications: ${user.medications}`;
+        try {
+          await sendWhatsApp(user.phone, reminder);
+        } catch (e) {
+          console.error(`Reminder failed for ${user.phone}:`, e);
+        }
+      }
+
+      // Missed check-in alert to family — 2 hours after check-in time with no response
+      if (user.familyPhone && user.checkinDate === today && user.checkinActive === true) {
+        const startedHour = checkInTimes.find(t => {
+          const [h] = t.split(":").map(Number);
+          return now.getHours() - h >= 2;
+        });
+        if (startedHour && now.getMinutes() === 0) {
+          const lang: Lang = user.language ?? "en";
+          const alert = lang === "ms"
+            ? `⏰ KAI Alert untuk ${user.familyName ?? "Ahli Keluarga"}\n\n${user.caregiverName ?? "Penjaga"} belum menjawab semakan harian untuk ${user.patientName ?? "pesakit"} sejak 2 jam lalu.\n\nSila hubungi mereka.`
+            : `⏰ KAI Alert for ${user.familyName ?? "Family"}\n\n${user.caregiverName ?? "The caregiver"} hasn't responded to today's check-in for ${user.patientName ?? "the patient"} in over 2 hours.\n\nPlease reach out to them.`;
+          try {
+            await sendWhatsApp(user.familyPhone, alert);
+          } catch (e) {
+            console.error(`Family alert failed for ${user.familyPhone}:`, e);
+          }
+        }
+      }
+    }
+  });
+
+  // Weekly summary to family — every Sunday at 8pm
+  cron.schedule("0 20 * * 0", async () => {
+    console.log("Running weekly family summary...");
+    const snapshot = await db.collection("users").where("onboarded", "==", true).get();
+
+    for (const doc of snapshot.docs) {
+      const user = doc.data();
+      if (!user.familyPhone) continue;
+
+      try {
+        const patterns = await getWeeklyPatterns(user.phone);
+        const summary = buildWeeklySummaryMessage(
+          user.caregiverName ?? "the caregiver",
+          user.patientName ?? "the patient",
+          patterns,
+          user.language ?? "en"
+        );
+        await sendWhatsApp(user.familyPhone, summary);
+        console.log(`Weekly summary sent to family of ${user.phone}`);
+      } catch (e) {
+        console.error(`Weekly summary failed for ${user.phone}:`, e);
+      }
+    }
+  });
+
+  console.log("Check-in scheduler running");
 }

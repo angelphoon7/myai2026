@@ -10,6 +10,8 @@ export interface UserProfile {
   mainCondition?: string;
   medications?: string;
   checkInTime?: string;
+  familyName?: string;
+  familyPhone?: string;
   checkinActive?: boolean;
   checkinStep?: number;
   checkinDate?: string;
@@ -33,6 +35,8 @@ const STEPS: Record<"en" | "ms", Record<number, string>> = {
     5: `What is the main condition?\n\n1. Diabetes\n2. Hypertension\n3. Stroke recovery\n4. Dementia\n5. Other`,
     6: `What medications is the patient currently taking?\nExample: Metformin 500mg, Amlodipine 5mg\n\nOr type "None" to skip.`,
     7: `What time should I check in daily?\nExample: 9am and 6pm`,
+    8: `👨‍👩‍👧 Last step — do you have a family member I should alert in emergencies?\n\nWhat is their name? (or type "skip" to finish)`,
+    9: `What is their WhatsApp number?\nExample: +60123456789`,
   },
   ms: {
     1: `Baik! Siapa nama anda?`,
@@ -42,6 +46,8 @@ const STEPS: Record<"en" | "ms", Record<number, string>> = {
     5: `Apakah penyakit utama?\n\n1. Diabetes\n2. Darah Tinggi\n3. Pemulihan Strok\n4. Dementia\n5. Lain-lain`,
     6: `Apakah ubat yang pesakit ambil sekarang?\nContoh: Metformin 500mg, Amlodipine 5mg\n\nAtau taip "Tiada" untuk langkau.`,
     7: `Pukul berapa saya perlu semak setiap hari?\nContoh: 9am dan 6pm`,
+    8: `👨‍👩‍👧 Langkah terakhir — ada ahli keluarga yang perlu saya hubungi dalam kecemasan?\n\nSiapa nama mereka? (atau taip "langkau" untuk selesai)`,
+    9: `Apakah nombor WhatsApp mereka?\nContoh: +60123456789`,
   },
 };
 
@@ -52,6 +58,18 @@ const RELATIONSHIP_MAP: Record<string, string> = {
 const CONDITION_MAP: Record<string, string> = {
   "1": "Diabetes", "2": "Hypertension", "3": "Stroke recovery", "4": "Dementia", "5": "Other",
 };
+
+function buildCompletionMessage(profile: Partial<UserProfile>, lang: "en" | "ms"): string {
+  const medLine = profile.medications
+    ? (lang === "ms" ? `\n💊 Ubat direkodkan: ${profile.medications}` : `\n💊 Medications noted: ${profile.medications}`)
+    : "";
+  const familyLine = profile.familyName
+    ? (lang === "ms" ? `\n👨‍👩‍👧 Kenalan kecemasan: ${profile.familyName}` : `\n👨‍👩‍👧 Emergency contact: ${profile.familyName}`)
+    : "";
+  return lang === "ms"
+    ? `Persediaan selesai, ${profile.caregiverName}! Saya akan mula memantau ${profile.patientName} dari hari ini.${medLine}${familyLine} 💙`
+    : `Setup complete, ${profile.caregiverName}! I'll start monitoring ${profile.patientName} from today.${medLine}${familyLine} 💙`;
+}
 
 export async function getUser(phone: string): Promise<UserProfile | null> {
   const doc = await db.collection("users").doc(phone).get();
@@ -122,15 +140,29 @@ export async function handleOnboarding(phone: string, message: string): Promise<
 
   if (step === 8) {
     update.checkInTime = message.trim();
+    update.step = 9;
+    await db.collection("users").doc(phone).update(update);
+    return STEPS[lang][8];
+  }
+
+  if (step === 9) {
+    const isSkip = ["skip", "langkau"].includes(message.trim().toLowerCase());
+    if (isSkip) {
+      update.onboarded = true;
+      await db.collection("users").doc(phone).update(update);
+      return buildCompletionMessage({ ...user, ...update }, lang);
+    }
+    update.familyName = message.trim();
+    update.step = 10;
+    await db.collection("users").doc(phone).update(update);
+    return STEPS[lang][9];
+  }
+
+  if (step === 10) {
+    update.familyPhone = message.trim().replace(/\s+/g, "");
     update.onboarded = true;
     await db.collection("users").doc(phone).update(update);
-    const profile = { ...user, ...update };
-    const medLine = profile.medications
-      ? (lang === "ms" ? `\n💊 Ubat direkodkan: ${profile.medications}` : `\n💊 I've noted the medications: ${profile.medications}`)
-      : "";
-    return lang === "ms"
-      ? `Persediaan selesai, ${profile.caregiverName}! Saya akan mula memantau ${profile.patientName} dari hari ini.${medLine} 💙`
-      : `Setup complete, ${profile.caregiverName}! I'll start monitoring ${profile.patientName} from today.${medLine} 💙`;
+    return buildCompletionMessage({ ...user, ...update }, lang);
   }
 
   return "";

@@ -3,10 +3,15 @@ import express, { Request, Response } from "express";
 import { getAIResponse } from "./ai";
 import { getTriageResponse } from "./triage";
 import { db } from "./firebase";
-import { getUser, handleOnboarding } from "./onboarding";
+import { getUser, handleOnboarding, UserProfile } from "./onboarding";
 import { buildOpeningMessage, buildFeedback, buildSummary, buildVitalQuestion, scheduleCheckins, initCheckinState, CHECKIN_TOTAL } from "./checkin";
-import { getWeeklyPatterns, getVitalReadings, analyzeVitalTrend, buildMemoryObservation, buildEscalationAlert, shouldEscalate } from "./memory";
+import { getWeeklyPatterns, getVitalReadings, analyzeVitalTrend, buildMemoryObservation, buildEscalationAlert, shouldEscalate, shouldWarnBurnout, buildWeeklySummaryMessage } from "./memory";
 import { shouldAskWellness, buildWellnessCheck, buildWellnessResponse } from "./wellness";
+import { sendWhatsApp } from "./notify";
+import { downloadTwilioImage, analyzeImage } from "./vision";
+
+const DOCTORONCALL = "https://www.doctoroncall.com.my";
+const KKMAPP = "https://kkmapp.moh.gov.my";
 
 const app = express();
 app.use(express.urlencoded({ extended: false }));
@@ -44,6 +49,26 @@ function sendTwiml(res: Response, text: string) {
 </Response>`);
 }
 
+async function notifyFamily(user: UserProfile, message: string) {
+  if (!user.familyPhone) return;
+  try {
+    await sendWhatsApp(user.familyPhone, message);
+    console.log(`Family notified: ${user.familyPhone}`);
+  } catch (e) {
+    console.error("Family notification failed:", e);
+  }
+}
+
+function injectTeleconsultLinks(triageReply: string, lang: "en" | "ms"): string {
+  if (triageReply.includes("CLINIC TODAY")) {
+    const linkLine = lang === "ms"
+      ? `\n\n🏥 Tempah sekarang:\n• DoctorOnCall: ${DOCTORONCALL}\n• KKMNow: ${KKMAPP}`
+      : `\n\n🏥 Book now:\n• DoctorOnCall: ${DOCTORONCALL}\n• KKMNow: ${KKMAPP}`;
+    return triageReply + linkLine;
+  }
+  return triageReply;
+}
+
 app.post("/webhook", async (req: Request, res: Response) => {
   try {
     const incomingMsg = req.body.Body || "";
@@ -65,18 +90,33 @@ app.post("/webhook", async (req: Request, res: Response) => {
     if (user.awaitingEscalationChoice) {
       const choice = incomingMsg.trim();
       await db.collection("users").doc(from).update({ awaitingEscalationChoice: false });
+
+      // Choice 2: actually notify the family member via WhatsApp
+      if (choice === "2") {
+        const patterns = await getWeeklyPatterns(from);
+        const summary = buildWeeklySummaryMessage(caregiver, patient, patterns, lang);
+        const familyMsg = lang === "ms"
+          ? `📋 KAI — Penjaga ${caregiver} meminta anda dihubungi.\n\n${summary}`
+          : `📋 KAI — Caregiver ${caregiver} has requested you be notified.\n\n${summary}`;
+        await notifyFamily(user, familyMsg);
+      }
+
       if (lang === "ms") {
         const responses: Record<string, string> = {
           "1": `✅ Baik, ${caregiver}. Saya akan ingatkan anda tentang ubat ${patient} pada masa check-in seterusnya.`,
-          "2": `📲 Direkodkan. Sila kongsikan ringkasan ini dengan ahli keluarga untuk sokongan.`,
-          "3": `🏥 Teleconsult disyorkan. Sila hubungi doktor anda atau gunakan perkhidmatan telehealth untuk membuat temujanji bagi ${patient}.`,
+          "2": user.familyPhone
+            ? `📲 Mesej telah dihantar kepada ${user.familyName ?? "ahli keluarga"} anda.`
+            : `📲 Tiada kenalan kecemasan disimpan. Sila kongsikan secara manual.`,
+          "3": `🏥 Teleconsult disyorkan. Tempah di sini:\n• DoctorOnCall: ${DOCTORONCALL}\n• KKMNow: ${KKMAPP}`,
         };
         return sendTwiml(res, responses[choice] ?? `Sila balas 1, 2, atau 3.`);
       }
       const responses: Record<string, string> = {
         "1": `✅ Got it, ${caregiver}. I'll remind you about ${patient}'s medication at the next check-in time.`,
-        "2": `📲 Noted. Please share this summary with a family member so they can support you.`,
-        "3": `🏥 Teleconsult recommended. Please contact your doctor or use your preferred telehealth service to book an appointment for ${patient}.`,
+        "2": user.familyPhone
+          ? `📲 Message sent to ${user.familyName ?? "your family member"}.`
+          : `📲 No emergency contact saved. Please share manually.`,
+        "3": `🏥 Teleconsult recommended. Book here:\n• DoctorOnCall: ${DOCTORONCALL}\n• KKMNow: ${KKMAPP}`,
       };
       return sendTwiml(res, responses[choice] ?? `Please reply 1, 2, or 3 to choose an option.`);
     }
@@ -84,7 +124,17 @@ app.post("/webhook", async (req: Request, res: Response) => {
     // Handle wellness response
     if (user.awaitingWellnessResponse) {
       await db.collection("users").doc(from).update({ awaitingWellnessResponse: false });
-      return sendTwiml(res, buildWellnessResponse(incomingMsg.trim(), caregiver, lang));
+      const response = buildWellnessResponse(incomingMsg.trim(), caregiver, lang);
+
+      // If caregiver is really struggling, quietly alert family
+      if (incomingMsg.trim() === "3" && user.familyPhone) {
+        const burnoutAlert = lang === "ms"
+          ? `💙 KAI Notice — ${caregiver} menyatakan mereka sangat tertekan hari ini semasa menjaga ${patient}.\n\nSila hubungi dan tawarkan sokongan jika boleh.`
+          : `💙 KAI Notice — ${caregiver} indicated they are really struggling today while caring for ${patient}.\n\nPlease reach out and offer support if you can.`;
+        await notifyFamily(user, burnoutAlert);
+      }
+
+      return sendTwiml(res, response);
     }
 
     // Handle vital reading
@@ -99,9 +149,13 @@ app.post("/webhook", async (req: Request, res: Response) => {
         await db.collection("checkins").doc(`${from}_${today}`).set({ vital: vitalInput }, { merge: true });
         const readings = await getVitalReadings(from);
         trendAlert = analyzeVitalTrend(readings, user.mainCondition ?? "", patient, lang);
+
+        // Notify family if vital is critically abnormal
+        if (trendAlert.includes("🚨") && user.familyPhone) {
+          await notifyFamily(user, `🚨 KAI Alert\n\n${trendAlert}\n\nCaregiver: ${caregiver}`);
+        }
       }
 
-      // Chain to wellness check if due
       if (shouldAskWellness(user.lastWellnessCheck)) {
         const today = new Date().toISOString().split("T")[0];
         await db.collection("users").doc(from).update({
@@ -121,7 +175,7 @@ app.post("/webhook", async (req: Request, res: Response) => {
     if (user.awaitingConcernDetail) {
       await db.collection("users").doc(from).update({ awaitingConcernDetail: false, checkinActive: false });
       const patterns = await getWeeklyPatterns(from);
-      const triageReply = await getTriageResponse(incomingMsg, {
+      let triageReply = await getTriageResponse(incomingMsg, {
         caregiverName: caregiver,
         patientName: patient,
         patientAge: user.patientAge,
@@ -131,6 +185,26 @@ app.post("/webhook", async (req: Request, res: Response) => {
         skippedMealDays: patterns.skippedMeals,
         language: lang,
       });
+
+      // Inject teleconsult links if clinic recommended
+      triageReply = injectTeleconsultLinks(triageReply, lang);
+
+      // Notify family immediately if A&E
+      if (triageReply.includes("GO TO A&E NOW") || triageReply.includes("KE A&E SEKARANG")) {
+        const aeAlert = lang === "ms"
+          ? `🚨 KECEMASAN — KAI Alert\n\n${caregiver} telah dinasihatkan untuk membawa ${patient} ke A&E dengan segera.\n\nSila hubungi mereka sekarang.`
+          : `🚨 EMERGENCY — KAI Alert\n\n${caregiver} has been advised to take ${patient} to A&E immediately.\n\nPlease call them now.`;
+        await notifyFamily(user, aeAlert);
+      }
+
+      // Alert family if burnout pattern detected
+      if (shouldWarnBurnout(patterns) && user.familyPhone) {
+        const burnoutAlert = lang === "ms"
+          ? `💙 KAI Notice\n\n${caregiver} telah melaporkan kebimbangan ${patterns.raisedConcerns}x minggu ini semasa menjaga ${patient}. Mereka mungkin memerlukan sokongan.`
+          : `💙 KAI Notice\n\n${caregiver} has raised concerns ${patterns.raisedConcerns} times this week while caring for ${patient}. They may need your support.`;
+        await notifyFamily(user, burnoutAlert);
+      }
+
       await db.collection("messages").add({
         incomingMsg, aiReply: triageReply, urgency: "Unknown", systemAction: "Triage assessment", from,
         createdAt: new Date().toISOString(),
@@ -219,6 +293,64 @@ app.post("/webhook", async (req: Request, res: Response) => {
       return sendTwiml(res, fullMessage);
     }
 
+    // Photo triage — KAI Eyes
+    const numMedia = parseInt(req.body.NumMedia || "0", 10);
+    if (numMedia > 0) {
+      const mediaUrl: string = req.body.MediaUrl0;
+      const mediaType: string = req.body.MediaContentType0 || "image/jpeg";
+
+      try {
+        const { base64, mimeType } = await downloadTwilioImage(mediaUrl);
+        const visionReply = await analyzeImage(
+          {
+            caregiverName: caregiver,
+            patientName: patient,
+            patientAge: user.patientAge,
+            condition: user.mainCondition,
+            medications: user.medications,
+            language: lang,
+            caption: incomingMsg.trim() || undefined,
+          },
+          base64,
+          mimeType
+        );
+
+        // Notify family if A&E finding
+        if (visionReply.includes("GO TO A&E NOW") || visionReply.includes("KE A&E SEKARANG")) {
+          const aeAlert = lang === "ms"
+            ? `🚨 KAI Eyes Alert\n\n${caregiver} telah menghantar gambar dan dinasihatkan ke A&E dengan segera untuk ${patient}.\n\nSila hubungi mereka sekarang.`
+            : `🚨 KAI Eyes Alert\n\n${caregiver} sent a photo and has been advised to take ${patient} to A&E immediately.\n\nPlease call them now.`;
+          await notifyFamily(user, aeAlert);
+        }
+
+        // Notify family if medication mismatch flagged
+        if (visionReply.includes("⚠️ Mismatch") || visionReply.includes("not on") || visionReply.includes("Do not give")) {
+          const medAlert = lang === "ms"
+            ? `💊 KAI Eyes — Amaran Ubat\n\n${caregiver} telah mengimbas ubat untuk ${patient} dan terdapat kemungkinan ketidakpadanan.\n\nSila semak segera.`
+            : `💊 KAI Eyes — Medication Alert\n\n${caregiver} scanned a medication for ${patient} and a possible mismatch was detected.\n\nPlease verify immediately.`;
+          await notifyFamily(user, medAlert);
+        }
+
+        await db.collection("messages").add({
+          type: "vision",
+          mediaUrl,
+          mediaType,
+          caption: incomingMsg.trim() || null,
+          aiReply: visionReply,
+          from,
+          createdAt: new Date().toISOString(),
+        });
+
+        return sendTwiml(res, visionReply);
+      } catch (err) {
+        console.error("Vision analysis failed:", err);
+        const fallback = lang === "ms"
+          ? `Maaf, saya tidak dapat menganalisis gambar itu. Sila huraikan gejala dalam teks dan saya akan bantu.`
+          : `Sorry, I couldn't analyze that image. Please describe the symptom in text and I'll help assess.`;
+        return sendTwiml(res, fallback);
+      }
+    }
+
     // Normal AI response
     const aiReply = await getAIResponse(incomingMsg, {
       caregiverName: caregiver,
@@ -234,6 +366,14 @@ app.post("/webhook", async (req: Request, res: Response) => {
     if (urgency === "Low") systemAction = "Monitoring started";
     else if (urgency === "Medium") systemAction = "Teleconsult should be booked";
     else if (urgency === "Emergency") systemAction = "Emergency services should be alerted immediately";
+
+    // Notify family on emergency urgency from free-text AI
+    if (urgency === "Emergency") {
+      const emergencyAlert = lang === "ms"
+        ? `🚨 KAI Alert — ${caregiver} mungkin menghadapi situasi kecemasan dengan ${patient}. Sila hubungi mereka segera.`
+        : `🚨 KAI Alert — ${caregiver} may be facing an emergency with ${patient}. Please contact them immediately.`;
+      await notifyFamily(user, emergencyAlert);
+    }
 
     console.log("Detected urgency:", urgency, "| System action:", systemAction);
 
