@@ -123,7 +123,6 @@ export default function Home() {
 
             <button
               type="button"
-              onClick={() => router.push("/onboarding")}
               className="mt-2 h-11 w-full rounded-xl bg-yellow-400 text-sm font-extrabold tracking-[0.24em] text-gray-900 shadow-[0_10px_28px_rgba(250,204,21,0.25)] transition-colors hover:bg-yellow-500 active:bg-yellow-600"
             >
               LOGIN
@@ -152,7 +151,7 @@ export default function Home() {
 
             <div className="pt-1 text-center text-sm text-white/70 drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]">
               Don&apos;t have an account?{" "}
-              <button type="button" className="font-semibold text-gray-300 hover:text-white">
+              <button type="button" onClick={() => router.push("/onboarding")} className="font-semibold text-gray-300 hover:text-white">
                 Sign up
               </button>
             </div>

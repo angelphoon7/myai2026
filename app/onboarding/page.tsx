@@ -3,6 +3,7 @@
 import { useState } from "react";
 import IPhone13Frame from "@/components/iPhone13Frame";
 import PixelSnow from "./PixelSnow";
+import { useRouter } from "next/navigation";
 
 type Lang = "en" | "ms";
 
@@ -81,11 +82,13 @@ const TWILIO_NUMBER = "+1 415 523 8886";
 const JOIN_CODE = process.env.NEXT_PUBLIC_TWILIO_JOIN_CODE ?? "join <your-sandbox-word>";
 
 export default function Onboarding() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [lang, setLang] = useState<Lang>("en");
   const [copied, setCopied] = useState<"number" | "code" | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [form, setForm] = useState<FormData>({
     phone: "", language: "en", caregiverName: "", relationship: "",
     patientName: "", patientAge: "", mainCondition: "", medications: "",
@@ -99,6 +102,20 @@ export default function Onboarding() {
     await navigator.clipboard.writeText(text);
     setCopied(which);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleConnectClick = () => {
+    setCountdown(5);
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          router.push(`/report?phone=${encodeURIComponent(form.phone)}`);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   const canNext = () => {
@@ -426,6 +443,7 @@ export default function Onboarding() {
               {submitting ? "..." : step === TOTAL_STEPS ? t.finish : t.next}
             </button>
           </div>
+
         </div>
       </div>
 
@@ -475,6 +493,7 @@ export default function Onboarding() {
                 href={`https://wa.me/14155238886?text=${encodeURIComponent(JOIN_CODE)}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={handleConnectClick}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-sm font-bold text-white"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -482,6 +501,24 @@ export default function Onboarding() {
                 </svg>
                 {t.openWhatsApp}
               </a>
+              {countdown !== null && (
+                <p className="mt-3 text-center text-sm text-gray-500">
+                  Redirecting to your dashboard in <strong className="text-teal-600">{countdown}s</strong>…
+                </p>
+              )}
+            </div>
+            <div className="mt-4 flex justify-center pb-8">
+              <button
+                onClick={() => router.push('/report')}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors font-sans"
+                aria-label="Report an issue"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                  <line x1="4" y1="22" x2="4" y2="15"></line>
+                </svg>
+                Report Issue
+              </button>
             </div>
           </div>
         </div>
