@@ -1,0 +1,36 @@
+#
+# Cloud Run web container (Next.js frontend)
+#
+# Uses Next.js standalone output for minimal image size.
+# Build-time: NEXT_PUBLIC_TWILIO_JOIN_CODE is baked in via --build-arg.
+# Runtime:    GOOGLE_CLOUD_PROJECT is injected by Cloud Run env var.
+#
+
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm install --legacy-peer-deps
+
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Bake the public join code into the build
+ARG NEXT_PUBLIC_TWILIO_JOIN_CODE
+ENV NEXT_PUBLIC_TWILIO_JOIN_CODE=$NEXT_PUBLIC_TWILIO_JOIN_CODE
+
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=8080
+ENV HOSTNAME=0.0.0.0
+
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+EXPOSE 8080
+CMD ["node", "server.js"]

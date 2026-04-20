@@ -123,6 +123,7 @@ export default function Home() {
 
             <button
               type="button"
+              onClick={() => router.push("/report")}
               className="mt-2 h-11 w-full rounded-xl bg-yellow-400 text-sm font-extrabold tracking-[0.24em] text-gray-900 shadow-[0_10px_28px_rgba(250,204,21,0.25)] transition-colors hover:bg-yellow-500 active:bg-yellow-600"
             >
               LOGIN
