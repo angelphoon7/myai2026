@@ -70,7 +70,7 @@ Concern: [summarise in 1 line]
 🚗 While travelling: [1 immediate safety action for caregiver]`;
 
     const response = await ai.generate({
-      model: 'googleai/gemini-2.0-flash',
+      model: 'googleai/gemini-2.5-flash',
       prompt,
     });
 

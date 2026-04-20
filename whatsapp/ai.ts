@@ -36,7 +36,7 @@ Keep steps practical and specific — not vague. Example: "Give Metformin 500mg 
 Message: ${input.message}`;
 
     const response = await ai.generate({
-      model: 'googleai/gemini-2.0-flash',
+      model: 'googleai/gemini-2.5-flash',
       prompt,
     });
 
