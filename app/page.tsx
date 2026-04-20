@@ -2,8 +2,11 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import IPhone13Frame from "@/components/iPhone13Frame";
+import TextType from "./TextType";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const bgPlaylist = ["/caregiver.mp4", "/feed.mp4", "/shirt.mp4"] as const;
   const [bgIndex, setBgIndex] = useState<number>(0);
@@ -50,8 +53,17 @@ export default function Home() {
 
       <div className="absolute inset-x-0 bottom-0 z-30 flex flex-col justify-end bg-gradient-to-b from-transparent to-black/40 px-5 pb-8 pt-10 text-white">
         <div className="mx-auto w-full max-w-sm">
-          <h1 className="mb-4 text-3xl font-extrabold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.65)]">
-            Welcome!
+          <h1 className="mb-4 flex flex-col justify-end min-h-[80px] text-2xl font-extrabold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.65)]">
+            <TextType 
+              text={["Welcome!"]}
+              typingSpeed={50}
+              pauseDuration={1500}
+              showCursor
+              cursorCharacter="|"
+              deletingSpeed={30}
+              variableSpeed={{ min: 30, max: 80 }}
+              cursorBlinkDuration={0.5}
+            />
           </h1>
 
           <form className="space-y-2.5">
@@ -111,31 +123,34 @@ export default function Home() {
 
             <button
               type="button"
+              onClick={() => router.push("/onboarding")}
               className="mt-2 h-11 w-full rounded-xl bg-yellow-400 text-sm font-extrabold tracking-[0.24em] text-gray-900 shadow-[0_10px_28px_rgba(250,204,21,0.25)] transition-colors hover:bg-yellow-500 active:bg-yellow-600"
             >
               LOGIN
             </button>
 
-            <div className="relative mt-2 flex items-center py-2">
+            <div className="relative flex items-center py-1">
               <div className="flex-grow border-t border-white/20"></div>
               <span className="shrink-0 px-3 text-xs text-white/50">OR</span>
               <div className="flex-grow border-t border-white/20"></div>
             </div>
 
-            <button
-              type="button"
-              className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl bg-white text-sm font-bold text-gray-900 shadow-sm transition-all hover:bg-gray-100 active:bg-gray-200"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-              Continue with Google
-            </button>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-[0_4px_14px_rgba(255,255,255,0.15)] transition-transform hover:scale-110 active:scale-95"
+                aria-label="Continue with Google"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+              </button>
+            </div>
 
-            <div className="pt-3 text-center text-sm text-white/70 drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]">
+            <div className="pt-1 text-center text-sm text-white/70 drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]">
               Don&apos;t have an account?{" "}
               <button type="button" className="font-semibold text-gray-300 hover:text-white">
                 Sign up
