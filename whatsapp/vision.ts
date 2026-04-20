@@ -1,5 +1,5 @@
 import { ai } from './genkit';
-import { getMedicalContext } from './medical-api';
+import { getMedicalContext, analyzeMedicationSafety } from './medical-api';
 import { analyzeWithCloudVision, buildVisionContext } from './cloud-vision';
 
 type Lang = "en" | "ms";
@@ -12,6 +12,7 @@ export interface VisionContext {
   medications?: string;
   language?: Lang;
   caption?: string;
+  recentSymptoms?: string[];
 }
 
 export async function downloadTwilioImage(
@@ -179,16 +180,25 @@ Visual concern: [1 line clinical summary of the finding]
 
   let result = response.text ?? "";
 
-  // If Gemini identified a medication, enrich with OpenFDA + RxNav data
+  // If Gemini identified a medication, enrich with OpenFDA data + symptom safety analysis
   const identifiedMatch = result.match(/Identified:\s*(.+?)(?:\n|$)/);
   if (identifiedMatch) {
     const identifiedDrug = identifiedMatch[1].trim();
-    const medContext = await getMedicalContext(
-      identifiedDrug,
-      ctx.medications ?? "",
-      lang
-    );
+    const [medContext, safetyInsight] = await Promise.all([
+      getMedicalContext(identifiedDrug, ctx.medications ?? "", lang),
+      ctx.recentSymptoms && ctx.recentSymptoms.length > 0
+        ? analyzeMedicationSafety(
+            identifiedDrug,
+            ctx.recentSymptoms,
+            ctx.condition ?? "",
+            ctx.medications ?? "",
+            ctx.patientName,
+            lang
+          )
+        : Promise.resolve(""),
+    ]);
     if (medContext) result += medContext;
+    if (safetyInsight) result += safetyInsight;
   }
 
   return result;

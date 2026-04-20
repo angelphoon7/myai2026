@@ -27,6 +27,29 @@ export async function getWeeklyPatterns(phone: string): Promise<PatternSummary> 
   return counts;
 }
 
+export async function saveSymptomNote(phone: string, text: string): Promise<void> {
+  const today = new Date().toISOString().split("T")[0];
+  await db.collection("checkins").doc(`${phone}_${today}`).set(
+    { concernText: text.substring(0, 500) },
+    { merge: true }
+  );
+}
+
+export async function getRecentSymptomNotes(phone: string): Promise<string[]> {
+  const notes: string[] = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split("T")[0];
+    const doc = await db.collection("checkins").doc(`${phone}_${dateStr}`).get();
+    if (!doc.exists) continue;
+    const text = doc.data()?.concernText;
+    if (text) notes.push(`[${dateStr}] ${text}`);
+  }
+  return notes;
+}
+
 export async function getVitalReadings(phone: string): Promise<{ date: string; vital: string }[]> {
   const today = new Date();
   const readings: { date: string; vital: string }[] = [];

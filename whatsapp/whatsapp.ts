@@ -5,9 +5,9 @@ import { getTriageResponse } from "./triage";
 import { db } from "./firebase";
 import { getUser, handleOnboarding, UserProfile } from "./onboarding";
 import { buildOpeningMessage, buildFeedback, buildSummary, buildVitalQuestion, scheduleCheckins, initCheckinState, CHECKIN_TOTAL } from "./checkin";
-import { getWeeklyPatterns, getVitalReadings, analyzeVitalTrend, buildMemoryObservation, buildEscalationAlert, shouldEscalate, shouldWarnBurnout, buildWeeklySummaryMessage } from "./memory";
+import { getWeeklyPatterns, getVitalReadings, analyzeVitalTrend, buildMemoryObservation, buildEscalationAlert, shouldEscalate, shouldWarnBurnout, buildWeeklySummaryMessage, saveSymptomNote, getRecentSymptomNotes } from "./memory";
 import { shouldAskWellness, buildWellnessCheck, buildWellnessResponse } from "./wellness";
-import { sendWhatsApp } from "./notify";
+import { sendWhatsApp, sendWhatsAppLong } from "./notify";
 import { checkDrugInteractions, formatInteractionWarnings } from "./medical-api";
 import { downloadTwilioImage, analyzeImage } from "./vision";
 
@@ -104,7 +104,10 @@ app.post("/webhook", async (req: Request, res: Response) => {
       // Process async — send result via Twilio API (not webhook response)
       setImmediate(async () => {
         try {
-          const { base64, mimeType } = await downloadTwilioImage(mediaUrl);
+          const [{ base64, mimeType }, recentSymptoms] = await Promise.all([
+            downloadTwilioImage(mediaUrl),
+            getRecentSymptomNotes(from),
+          ]);
           const visionReply = await analyzeImage(
             {
               caregiverName: caregiver,
@@ -114,12 +117,13 @@ app.post("/webhook", async (req: Request, res: Response) => {
               medications: user.medications,
               language: lang,
               caption,
+              recentSymptoms,
             },
             base64,
             mimeType
           );
 
-          await sendWhatsApp(from, visionReply);
+          await sendWhatsAppLong(from, visionReply);
 
           if (visionReply.includes("GO TO A&E NOW") || visionReply.includes("KE A&E SEKARANG")) {
             const aeAlert = lang === "ms"
@@ -238,6 +242,7 @@ app.post("/webhook", async (req: Request, res: Response) => {
     // Handle concern detail → triage assessment
     if (user.awaitingConcernDetail) {
       await db.collection("users").doc(from).update({ awaitingConcernDetail: false, checkinActive: false });
+      await saveSymptomNote(from, incomingMsg);
       const patterns = await getWeeklyPatterns(from);
       let triageReply = await getTriageResponse(incomingMsg, {
         caregiverName: caregiver,

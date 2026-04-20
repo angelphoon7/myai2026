@@ -1,3 +1,5 @@
+import { ai } from './genkit';
+
 const FDA_BASE = "https://api.fda.gov";
 
 type Lang = "en" | "ms";
@@ -195,6 +197,59 @@ export function formatInteractionWarnings(
   });
 
   return `${header}\n${lines.join("\n")}`;
+}
+
+// Gemini-powered symptom-to-medication safety analysis — flags concerns, never prescribes
+export async function analyzeMedicationSafety(
+  identifiedDrug: string,
+  recentSymptoms: string[],
+  condition: string,
+  allMedications: string,
+  patientName: string,
+  lang: Lang = "en"
+): Promise<string> {
+  if (recentSymptoms.length === 0) return "";
+
+  const symptomsText = recentSymptoms.join("\n");
+  const langLine = lang === "ms" ? "Respond entirely in Bahasa Malaysia." : "Respond in English.";
+
+  const prompt = `You are a clinical safety flagging assistant — NOT a prescriber or diagnostician. ${langLine}
+
+Patient: ${patientName}
+Known condition: ${condition || "not specified"}
+Current medication list: ${allMedications || "not specified"}
+Medication being reviewed: ${identifiedDrug}
+
+Recent symptoms/concerns reported by caregiver (last 7 days):
+${symptomsText}
+
+Your task:
+1. Identify if any reported symptom is a KNOWN side effect or warning sign for "${identifiedDrug}"
+2. Identify if any symptom combination with the full medication list is a concern (e.g. hypoglycemia + insulin, bleeding + blood thinners)
+3. If you find a concern, describe it in 1-2 plain sentences that a non-medical caregiver can understand
+4. If no clear concern, respond with exactly: "No specific concerns flagged based on available information."
+
+RULES:
+- NEVER say "give", "take", "stop", "increase", or "decrease" medication
+- NEVER diagnose
+- Always end with: "⚠️ This is an observational flag only. Do not change any medication without consulting your doctor."
+- Keep response under 150 words`;
+
+  try {
+    const response = await ai.generate({
+      model: "googleai/gemini-2.5-flash",
+      prompt,
+    });
+    const text = (response.text ?? "").trim();
+    if (!text || text.includes("No specific concerns flagged")) return "";
+
+    const header = lang === "ms"
+      ? `\n\n🔍 KAI Insight — Analisis Keselamatan Ubat:`
+      : `\n\n🔍 KAI Insight — Medication Safety Analysis:`;
+    return `${header}\n${text}`;
+  } catch {
+    return "";
+  }
 }
 
 // Safe combined lookup: drug info + interactions, never throws
