@@ -2,7 +2,7 @@ import 'dotenv/config';
 import * as readline from 'readline';
 import { getUser, handleOnboarding } from './onboarding';
 import { getAIResponse } from './ai';
-import { CHECKIN_QUESTIONS, sendCheckinQuestion, startCheckin } from './checkin';
+import { CHECKIN_TOTAL, buildOpeningMessage, buildNextQuestion, initCheckinState } from './checkin';
 import { db } from './firebase';
 
 const TEST_PHONE = 'whatsapp:+60123456789';
@@ -31,10 +31,10 @@ async function processMessage(input: string): Promise<string> {
     );
 
     const nextStep = step + 1;
-    if (nextStep < CHECKIN_QUESTIONS.length) {
+    if (nextStep < CHECKIN_TOTAL) {
       await db.collection('users').doc(TEST_PHONE).update({ checkinStep: nextStep });
-      return `[Check-in ${nextStep + 1}/${CHECKIN_QUESTIONS.length}]\n` +
-        CHECKIN_QUESTIONS[nextStep].replace('{patient}', user.patientName ?? 'your patient') +
+      return `[Check-in ${nextStep + 1}/${CHECKIN_TOTAL}]\n` +
+        buildNextQuestion(nextStep, user.caregiverName ?? 'there', user.patientName ?? 'your patient') +
         '\nReply YES or NO';
     } else {
       await db.collection('users').doc(TEST_PHONE).update({ checkinActive: false });
@@ -43,9 +43,9 @@ async function processMessage(input: string): Promise<string> {
   }
 
   if (input.trim().toLowerCase() === '/checkin') {
-    await startCheckin(TEST_PHONE, user.patientName ?? 'your patient');
-    const q = CHECKIN_QUESTIONS[0].replace('{patient}', user.patientName ?? 'your patient');
-    return `[Check-in 1/${CHECKIN_QUESTIONS.length}]\n${q}\nReply YES or NO`;
+    await initCheckinState(TEST_PHONE);
+    const q = buildOpeningMessage(user.caregiverName ?? 'there', user.patientName ?? 'your patient');
+    return `[Check-in 1/${CHECKIN_TOTAL}]\n${q}\nReply YES or NO`;
   }
 
   const aiReply = await getAIResponse(input);
