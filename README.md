@@ -313,6 +313,40 @@ Each choice has real action: reminder set / family WhatsApp sent / teleconsult l
 
 ---
 
+### Web Frontend (Next.js 15)
+
+**Login Page** (`/`)
+- Animated video carousel background (caregiver.mp4, feed.mp4, shirt.mp4)
+- Sign in form with username/password + Google sign-in button
+- Sign up button routes to `/onboarding`
+
+**Web Onboarding** (`/onboarding`)
+- 9-step guided form matching WhatsApp onboarding fields exactly
+- Bilingual (English / Bahasa Malaysia) toggled in step 1
+- Quick-select chips for relationship, condition, check-in time
+- Saves profile to Firestore via POST `/api/onboard`
+- Completion screen: Twilio number + join code to copy, Open WhatsApp button
+- After clicking Open WhatsApp: 5-second countdown then auto-redirects to `/report`
+
+**Caregiver Dashboard** (`/home`)
+- Loads patient data via GET `/api/report?phone=`
+- **Home tab:** greeting, patient summary chip with avg care score, today's check-in status (medication taken/missed, meals eaten/missed), 7-day bar chart, latest vital reading, quick action grid, current medications reminder
+- **Report tab:** full 30-day clinical report (same as `/report`) embedded inline
+- **Settings tab:** account info, check-in time, re-run onboarding, logout
+- Bottom navigation bar switching between all three tabs
+
+**Health Report** (`/report`)
+- Shareable standalone URL: `/report?phone=+60123456789`
+- Patient profile card: name, age, condition, caregiver, relationship, medications, emergency contact
+- 7-day compliance stats: medication %, meal %, concern count (colour-coded)
+- Daily check-in timeline: MED ✓/✗, MEAL ✓/✗, concern flag, vital, care score badge per day
+- Vital readings history (blood sugar / BP depending on condition)
+- Caregiver free-text notes with dates
+- "For Doctor" clinical bullet summary
+- Generated timestamp footer
+
+---
+
 ### Bilingual Support (EN + Bahasa Malaysia)
 
 - Set once during onboarding, applied to every interaction
@@ -591,7 +625,27 @@ myai2026/
 │   ├── test-bot.ts        Local bot logic test runner
 │   ├── test-ai.ts         Genkit AI flow test runner
 │   └── test-firestore.ts  Firestore connectivity test
-├── app/                   Next.js frontend (unused in current scope)
+├── app/                   Next.js 15 web frontend (App Router)
+│   ├── page.tsx           Login page — animated video background + sign-in form
+│   ├── onboarding/
+│   │   └── page.tsx       9-step web onboarding + WhatsApp connect screen
+│   │                        → auto-redirects to /report after connecting
+│   ├── home/
+│   │   └── page.tsx       Caregiver dashboard — 3 tabs:
+│   │                        Home: today's check-in, 7-day bar chart, latest vital
+│   │                        Report: full 30-day clinical report
+│   │                        Settings: account + WhatsApp preferences
+│   ├── report/
+│   │   └── page.tsx       Standalone health report — shareable with doctors/family
+│   │                        Patient profile, compliance %, vitals, caregiver notes,
+│   │                        "For Doctor" clinical summary
+│   └── api/
+│       ├── onboard/
+│       │   └── route.ts   POST /api/onboard — saves profile to Firestore
+│       └── report/
+│           └── route.ts   GET /api/report?phone= — fetches 30-day check-in history
+├── components/
+│   └── iPhone13Frame.tsx  Mobile device chrome wrapper (demo presentation)
 ├── tsconfig.backend.json  TypeScript config for backend (commonjs, node resolution)
 ├── tsconfig.json          Next.js frontend TypeScript config
 └── .env                   Environment variables
