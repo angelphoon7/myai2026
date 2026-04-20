@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import IPhone13Frame from "@/components/iPhone13Frame";
-import Grainient from "./Grainient";
+import PixelSnow from "./PixelSnow";
 
 type Lang = "en" | "ms";
 
@@ -132,41 +132,31 @@ export default function Onboarding() {
 
   return (
     <IPhone13Frame>
-      <div className="flex min-h-full flex-col relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <Grainient
-            color1="#ddcadc"
-            color2="#857ca0"
-            color3="#393140"
-            timeSpeed={1.2}
-            colorBalance={0}
-            warpStrength={1}
-            warpFrequency={5}
-            warpSpeed={2}
-            warpAmplitude={50}
-            blendAngle={0}
-            blendSoftness={0.05}
-            rotationAmount={500}
-            noiseScale={2}
-            grainAmount={0.1}
-            grainScale={2}
-            grainAnimated={false}
-            contrast={1.5}
-            gamma={1}
-            saturation={1}
-            centerX={0}
-            centerY={0}
-            zoom={0.9}
+      <div className="flex min-h-full flex-col relative overflow-hidden bg-slate-900">
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <PixelSnow 
+            color="#ffffff"
+            flakeSize={0.01}
+            minFlakeSize={1.25}
+            pixelResolution={200}
+            speed={1.25}
+            density={0.3}
+            direction={125}
+            brightness={1}
+            depthFade={8}
+            farPlane={20}
+            gamma={0.4545}
+            variant="square"
           />
         </div>
         
         {/* Header */}
         <div className="relative z-10 px-5 pb-5 pt-10 text-white">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-xs font-medium text-teal-200">{t.step(step)}</span>
-            <span className="text-xs font-medium text-teal-200">{Math.round(progress)}%</span>
+            <span className="text-xs font-medium text-yellow-400">{t.step(step)}</span>
+            <span className="text-xs font-medium text-yellow-400">{Math.round(progress)}%</span>
           </div>
-          <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-teal-900/40">
+          <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-yellow-900/40">
             <div
               className="h-full rounded-full bg-white transition-all duration-500"
               style={{ width: `${progress}%` }}
@@ -183,7 +173,7 @@ export default function Onboarding() {
             {step === 8 && t.s8.title}
             {step === 9 && t.s9.title}
           </h1>
-          <p className="mt-0.5 text-sm text-teal-100">
+          <p className="mt-0.5 text-sm text-yellow-400">
             {step === 1 && t.s1.subtitle}
             {step === 2 && t.s2.subtitle}
             {step === 3 && t.s3.subtitle}
@@ -207,13 +197,13 @@ export default function Onboarding() {
                   onClick={() => setLang(l)}
                   className={`flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all ${
                     lang === l
-                      ? "border-teal-500 bg-teal-50"
+                      ? "border-yellow-500 bg-yellow-50"
                       : "border-gray-100 bg-gray-50 hover:border-gray-200"
                   }`}
                 >
                   <span className="text-3xl">{l === "en" ? "🇬🇧" : "🇲🇾"}</span>
                   <div>
-                    <p className={`font-semibold ${lang === l ? "text-teal-700" : "text-gray-800"}`}>
+                    <p className={`font-semibold ${lang === l ? "text-yellow-600" : "text-gray-800"}`}>
                       {l === "en" ? "English" : "Bahasa Malaysia"}
                     </p>
                     <p className="text-sm text-gray-500">
@@ -221,7 +211,7 @@ export default function Onboarding() {
                     </p>
                   </div>
                   {lang === l && (
-                    <span className="ml-auto text-teal-500">
+                    <span className="ml-auto text-yellow-500">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                         <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
@@ -235,17 +225,17 @@ export default function Onboarding() {
           {/* Step 2 — Phone */}
           {step === 2 && (
             <div className="space-y-4">
-              <div className="rounded-2xl bg-teal-50 p-4 text-sm text-teal-700">
+              <div className="rounded-2xl bg-yellow-50 p-4 text-sm text-yellow-600">
                 📱 This number will be used to connect your WhatsApp with KAI.
               </div>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">{t.s2.label}</span>
+                <span className="mb-1.5 block text-sm font-medium text-white">{t.s2.label}</span>
                 <input
                   type="tel"
                   value={form.phone}
                   onChange={e => set("phone", e.target.value)}
                   placeholder={t.s2.placeholder}
-                  className="h-12 w-full rounded-xl border border-gray-200 px-4 text-base text-gray-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                  className="h-12 w-full rounded-xl border border-slate-700 bg-slate-800/60 px-4 text-base text-white placeholder-gray-300 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
                 />
               </label>
             </div>
@@ -254,13 +244,13 @@ export default function Onboarding() {
           {/* Step 3 — Caregiver name */}
           {step === 3 && (
             <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-gray-700">{t.s3.label}</span>
+              <span className="mb-1.5 block text-sm font-medium text-white">{t.s3.label}</span>
               <input
                 type="text"
                 value={form.caregiverName}
                 onChange={e => set("caregiverName", e.target.value)}
                 placeholder={t.s3.placeholder}
-                className="h-12 w-full rounded-xl border border-gray-200 px-4 text-base text-gray-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                className="h-12 w-full rounded-xl border border-slate-700 bg-slate-800/60 px-4 text-base text-white placeholder-gray-300 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
                 autoFocus
               />
             </label>
@@ -275,7 +265,7 @@ export default function Onboarding() {
                   onClick={() => set("relationship", r)}
                   className={`rounded-2xl border-2 p-4 text-center transition-all ${
                     form.relationship === r
-                      ? "border-teal-500 bg-teal-50 text-teal-700"
+                      ? "border-yellow-500 bg-yellow-50 text-yellow-600"
                       : "border-gray-100 bg-gray-50 text-gray-700 hover:border-gray-200"
                   }`}
                 >
@@ -292,24 +282,24 @@ export default function Onboarding() {
           {step === 5 && (
             <div className="space-y-4">
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">{t.s5.nameLbl}</span>
+                <span className="mb-1.5 block text-sm font-medium text-white">{t.s5.nameLbl}</span>
                 <input
                   type="text"
                   value={form.patientName}
                   onChange={e => set("patientName", e.target.value)}
                   placeholder={t.s5.namePH}
-                  className="h-12 w-full rounded-xl border border-gray-200 px-4 text-base text-gray-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                  className="h-12 w-full rounded-xl border border-slate-700 bg-slate-800/60 px-4 text-base text-white placeholder-gray-300 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">{t.s5.ageLbl}</span>
+                <span className="mb-1.5 block text-sm font-medium text-white">{t.s5.ageLbl}</span>
                 <input
                   type="number"
                   value={form.patientAge}
                   onChange={e => set("patientAge", e.target.value)}
                   placeholder={t.s5.agePH}
                   min={1} max={120}
-                  className="h-12 w-full rounded-xl border border-gray-200 px-4 text-base text-gray-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                  className="h-12 w-full rounded-xl border border-slate-700 bg-slate-800/60 px-4 text-base text-white placeholder-gray-300 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
                 />
               </label>
             </div>
@@ -326,7 +316,7 @@ export default function Onboarding() {
                     onClick={() => set("mainCondition", c)}
                     className={`rounded-2xl border-2 p-4 text-center transition-all ${
                       form.mainCondition === c
-                        ? "border-teal-500 bg-teal-50 text-teal-700"
+                        ? "border-yellow-500 bg-yellow-50 text-yellow-600"
                         : "border-gray-100 bg-gray-50 text-gray-700 hover:border-gray-200"
                     } ${i === 4 ? "col-span-2" : ""}`}
                   >
@@ -341,13 +331,13 @@ export default function Onboarding() {
           {/* Step 7 — Medications */}
           {step === 7 && (
             <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-gray-700">{t.s7.label}</span>
+              <span className="mb-1.5 block text-sm font-medium text-white">{t.s7.label}</span>
               <textarea
                 value={form.medications}
                 onChange={e => set("medications", e.target.value)}
                 placeholder={t.s7.placeholder}
                 rows={5}
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base text-gray-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-3 text-base text-white placeholder-gray-300 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
               />
             </label>
           )}
@@ -356,13 +346,13 @@ export default function Onboarding() {
           {step === 8 && (
             <div className="space-y-4">
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">{t.s8.label}</span>
+                <span className="mb-1.5 block text-sm font-medium text-white">{t.s8.label}</span>
                 <input
                   type="text"
                   value={form.checkInTime}
                   onChange={e => set("checkInTime", e.target.value)}
                   placeholder={t.s8.placeholder}
-                  className="h-12 w-full rounded-xl border border-gray-200 px-4 text-base text-gray-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                  className="h-12 w-full rounded-xl border border-slate-700 bg-slate-800/60 px-4 text-base text-white placeholder-gray-300 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
                 />
               </label>
               <div className="space-y-2">
@@ -370,7 +360,7 @@ export default function Onboarding() {
                   <button
                     key={t}
                     onClick={() => set("checkInTime", `${t} and 6pm`)}
-                    className="mr-2 rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700"
+                    className="mr-2 rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-sm text-gray-300 hover:border-yellow-400 hover:bg-yellow-400 hover:text-gray-900"
                   >
                     {t}
                   </button>
@@ -386,23 +376,23 @@ export default function Onboarding() {
                 ⚠️ KAI will alert this person if an emergency is detected.
               </div>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">{t.s9.nameLbl}</span>
+                <span className="mb-1.5 block text-sm font-medium text-white">{t.s9.nameLbl}</span>
                 <input
                   type="text"
                   value={form.familyName}
                   onChange={e => set("familyName", e.target.value)}
                   placeholder={t.s9.namePH}
-                  className="h-12 w-full rounded-xl border border-gray-200 px-4 text-base text-gray-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                  className="h-12 w-full rounded-xl border border-slate-700 bg-slate-800/60 px-4 text-base text-white placeholder-gray-300 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-700">{t.s9.phoneLbl}</span>
+                <span className="mb-1.5 block text-sm font-medium text-white">{t.s9.phoneLbl}</span>
                 <input
                   type="tel"
                   value={form.familyPhone}
                   onChange={e => set("familyPhone", e.target.value)}
                   placeholder={t.s9.phonePH}
-                  className="h-12 w-full rounded-xl border border-gray-200 px-4 text-base text-gray-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                  className="h-12 w-full rounded-xl border border-slate-700 bg-slate-800/60 px-4 text-base text-white placeholder-gray-300 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
                 />
               </label>
             </div>
@@ -410,12 +400,12 @@ export default function Onboarding() {
         </div>
 
         {/* Bottom nav */}
-        <div className="border-t border-gray-100 px-5 pb-8 pt-4">
+        <div className="border-t border-slate-800 px-5 pb-8 pt-4 relative z-10">
           <div className="flex gap-3">
             {step > 1 && (
               <button
                 onClick={() => setStep(s => s - 1)}
-                className="flex h-12 flex-1 items-center justify-center rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                className="flex h-12 flex-1 items-center justify-center rounded-xl border border-slate-700 text-sm font-medium text-gray-300 hover:bg-slate-800"
               >
                 {t.back}
               </button>
@@ -423,7 +413,7 @@ export default function Onboarding() {
             {step === 9 && (
               <button
                 onClick={handleNext}
-                className="flex h-12 flex-1 items-center justify-center rounded-xl border border-gray-200 text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="flex h-12 flex-1 items-center justify-center rounded-xl border border-slate-700 text-sm font-medium text-gray-300 hover:bg-slate-800"
               >
                 {t.skip}
               </button>
@@ -431,7 +421,7 @@ export default function Onboarding() {
             <button
               onClick={handleNext}
               disabled={!canNext() || submitting}
-              className="flex h-12 flex-[2] items-center justify-center rounded-xl bg-teal-600 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700 disabled:opacity-40"
+              className="flex h-12 flex-[2] items-center justify-center rounded-xl bg-yellow-400 text-sm font-semibold text-gray-900 shadow-sm transition-colors hover:bg-yellow-500 disabled:opacity-40"
             >
               {submitting ? "..." : step === TOTAL_STEPS ? t.finish : t.next}
             </button>
@@ -442,7 +432,7 @@ export default function Onboarding() {
       {/* Completion overlay */}
       {done && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white px-6 text-center">
-          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-teal-100 text-4xl">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-yellow-100 text-4xl">
             🎉
           </div>
           <h2 className="mb-2 text-2xl font-bold text-gray-900">{t.s10.title}</h2>
@@ -456,7 +446,7 @@ export default function Onboarding() {
                 <span className="font-mono text-lg font-bold text-gray-800">{TWILIO_NUMBER}</span>
                 <button
                   onClick={() => copyText(TWILIO_NUMBER, "number")}
-                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-teal-600 shadow-sm border border-gray-200"
+                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-yellow-600 shadow-sm border border-gray-200"
                 >
                   {copied === "number" ? t.copied : t.copy}
                 </button>
@@ -470,7 +460,7 @@ export default function Onboarding() {
                 <span className="font-mono text-base font-bold text-gray-800">{JOIN_CODE}</span>
                 <button
                   onClick={() => copyText(JOIN_CODE, "code")}
-                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-teal-600 shadow-sm border border-gray-200"
+                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-yellow-600 shadow-sm border border-gray-200"
                 >
                   {copied === "code" ? t.copied : t.copy}
                 </button>
@@ -478,9 +468,9 @@ export default function Onboarding() {
             </div>
 
             {/* Step 3 */}
-            <div className="rounded-2xl bg-teal-50 p-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-teal-400">{t.connectStep3}</p>
-              <p className="mb-3 text-sm text-teal-700">{t.allSet}</p>
+            <div className="rounded-2xl bg-yellow-50 p-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-yellow-400">{t.connectStep3}</p>
+              <p className="mb-3 text-sm text-yellow-600">{t.allSet}</p>
               <a
                 href={`https://wa.me/14155238886?text=${encodeURIComponent(JOIN_CODE)}`}
                 target="_blank"

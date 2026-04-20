@@ -111,7 +111,7 @@ export default function Home() {
 
             <button
               type="button"
-              className="mt-2 h-11 w-full rounded-xl bg-white text-sm font-extrabold tracking-[0.24em] text-black shadow-[0_10px_28px_rgba(255,255,255,0.15)] transition-colors hover:bg-gray-100 active:bg-gray-200"
+              className="mt-2 h-11 w-full rounded-xl bg-yellow-400 text-sm font-extrabold tracking-[0.24em] text-gray-900 shadow-[0_10px_28px_rgba(250,204,21,0.25)] transition-colors hover:bg-yellow-500 active:bg-yellow-600"
             >
               LOGIN
             </button>
