@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "backend": "npx ts-node --project tsconfig.backend.json whatsapp/whatsapp.ts"
+    "backend": "npx ts-node --project tsconfig.backend.json whatsapp/whatsapp.ts",
+    "backend:build": "npx tsc -p tsconfig.backend.json --outDir dist-backend",
+    "backend:start": "node dist-backend/whatsapp.js"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.32.0",
