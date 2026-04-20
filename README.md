@@ -602,6 +602,12 @@ KAI: "💊 Medication list updated for Bobby:
 **Step 8** — Sunday cron demo: show weekly summary message received on family phone  
 → Shows: full care score, adherence summary, caregiver attribution
 
+**Step 9** — Open web app, click Sign Up, complete 9-step onboarding, click Open WhatsApp  
+→ Shows: profile saved to Firestore, 5-second countdown, auto-redirect to /report
+
+**Step 10** — Open `/home?phone=+60xxxxxxxxx` in browser  
+→ Shows: live dashboard with today's check-in status, 7-day bar chart, latest vital, full report tab, doctor-ready summary
+
 ---
 
 ## 8. Codebase Structure
@@ -668,6 +674,9 @@ GEMINI_API_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Google Cloud (Firestore + Cloud Vision)
 GOOGLE_CLOUD_PROJECT=kai2026
 # No key file needed — uses Application Default Credentials (ADC)
+
+# Web frontend
+NEXT_PUBLIC_TWILIO_JOIN_CODE=join <your-sandbox-word>
 ```
 
 ### ADC Setup (one-time)
