@@ -1,7 +1,7 @@
-# KAI — AI-Powered Home Care Coordination & Emergency Prevention
+# KAI — Keep Alive Intelligence
 
-> A WhatsApp-based AI caregiver assistant built for the Google AI Hackathon 2026.  
-> Reducing emergency department overcrowding in Malaysia's ageing society — one check-in at a time.
+> A WhatsApp-based AI caregiver assistant built for reducing emergency department overcrowding in Malaysia's ageing society — one check-in at a time.
+> AI-Powered Home Care Coordination & Emergency Prevention
 
 ---
 
