@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import IPhone13Frame from "@/component/iPhone13Frame";
+import IPhone13Frame from "@/components/iPhone13Frame";
 
 export default function Home() {
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
