@@ -53,7 +53,7 @@ export default function Home() {
 
       <div className="absolute inset-x-0 bottom-0 z-30 flex flex-col justify-end bg-gradient-to-b from-transparent to-black/40 px-5 pb-8 pt-10 text-white">
         <div className="mx-auto w-full max-w-sm">
-          <h1 className="mb-4 flex flex-col justify-end min-h-[80px] text-2xl font-extrabold tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.65)]">
+          <h1 className="mb-4 flex flex-col justify-end min-h-[80px] text-2xl font-serif font-extrabold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.65)]">
             <TextType 
               text={["Welcome!"]}
               typingSpeed={50}
