@@ -5,23 +5,6 @@
 
 ---
 
-## Table of Contents
-
-1. [The Problem](#1-the-problem)
-2. [The Solution](#2-the-solution)
-3. [Full System Architecture](#3-full-system-architecture)
-4. [AI & Technology Stack](#4-ai--technology-stack)
-5. [Complete Feature List](#5-complete-feature-list)
-6. [All User Scenarios — End to End](#6-all-user-scenarios--end-to-end)
-7. [Demo Flow (Hackathon Script)](#7-demo-flow-hackathon-script)
-8. [Codebase Structure](#8-codebase-structure)
-9. [Environment Setup](#9-environment-setup)
-10. [Running the Bot](#10-running-the-bot)
-11. [Extended Knowledge — Unused but Useful Google Tools](#11-extended-knowledge--unused-but-useful-google-tools)
-12. [Impact & Vision](#12-impact--vision)
-
----
-
 ## 1. The Problem
 
 Malaysia is on track to become an **Aged Society** (14%+ population over 65) within this decade. The strain falls on two groups: Emergency Departments and home caregivers.
