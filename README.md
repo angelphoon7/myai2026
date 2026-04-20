@@ -1,366 +1,817 @@
 # KAI — AI-Powered Home Care Coordination & Emergency Prevention
 
-> A WhatsApp-based AI caregiver assistant built to reduce emergency department overcrowding in Malaysia's ageing society.
+> A WhatsApp-based AI caregiver assistant built for the Google AI Hackathon 2026.  
+> Reducing emergency department overcrowding in Malaysia's ageing society — one check-in at a time.
+
+---
+
+## Table of Contents
+
+1. [The Problem](#1-the-problem)
+2. [The Solution](#2-the-solution)
+3. [Full System Architecture](#3-full-system-architecture)
+4. [AI & Technology Stack](#4-ai--technology-stack)
+5. [Complete Feature List](#5-complete-feature-list)
+6. [All User Scenarios — End to End](#6-all-user-scenarios--end-to-end)
+7. [Demo Flow (Hackathon Script)](#7-demo-flow-hackathon-script)
+8. [Codebase Structure](#8-codebase-structure)
+9. [Environment Setup](#9-environment-setup)
+10. [Running the Bot](#10-running-the-bot)
+11. [Extended Knowledge — Unused but Useful Google Tools](#11-extended-knowledge--unused-but-useful-google-tools)
+12. [Impact & Vision](#12-impact--vision)
 
 ---
 
 ## 1. The Problem
 
-### Malaysia Is Becoming an Aged Society
-
-Malaysia is on track to reach **Aged Society status** — where 14% of the population is over 65 — within this decade. This demographic shift is placing unprecedented strain on a public healthcare system that was not designed to absorb it.
-
-The burden falls in two places.
-
----
-
-### Emergency Department Overcrowding
+Malaysia is on track to become an **Aged Society** (14%+ population over 65) within this decade. The strain falls on two groups: Emergency Departments and home caregivers.
 
 | Metric | Reality |
 |---|---|
 | Non-urgent elderly ED visits | 40–60% of total visits |
-| Average wait time | 4–6 hours |
-| Average cost per visit | ~RM 2,500 |
-| Root cause | Caregivers defaulting to ED "just in case" |
+| Average wait time per visit | 4–6 hours |
+| Estimated cost per visit | ~RM 2,500 |
+| Root cause | Caregivers with no clinical training defaulting to ED "just in case" |
+| Informal caregivers in Malaysia | ~3.4 million unpaid family members |
 
-Most of these visits are **preventable**. Elderly patients arrive at Emergency Departments not because of true emergencies, but because their caregivers — typically untrained family members — had no reliable way to assess whether a symptom was serious or manageable at home.
-
----
-
-### The Home Care Monitoring Gap
-
-After hospital discharge, elderly patients are sent home to recover under the supervision of family caregivers who:
-
-- Have **no clinical training** to interpret symptoms
-- Feel **uncertain and overwhelmed**, especially when something changes
-- Lack a system to **track patterns** over time (missed medications, skipped meals, recurring concerns)
-- Default to the Emergency Department as the safest option, even for non-urgent cases
-
-The result: avoidable ED visits, caregiver burnout, and deteriorating patient outcomes — all compounding the strain on Malaysia's public hospitals.
+Most of these visits are **preventable**. Caregivers send patients to A&E not because of true emergencies, but because they had no reliable way to tell the difference.
 
 ---
 
 ## 2. The Solution
 
-### KAI — Your AI Caregiver Companion
-
-KAI is a **WhatsApp-based AI care coordination system** that gives every family caregiver in Malaysia access to 24/7 clinical guidance — with zero app downloads, zero hardware, and zero technical knowledge required.
+**KAI** is a WhatsApp-based AI care coordination system that gives every family caregiver in Malaysia access to 24/7 clinical guidance — with zero app downloads, zero hardware, and zero technical knowledge required.
 
 KAI works on any phone that can send a WhatsApp message.
 
-```
-Chat → Understand → Act
-```
-
-KAI does three things that no existing solution combines:
-
+**Three things no existing solution combines:**
 1. **Monitors daily** — structured check-ins track medication, meals, and concerns every day
-2. **Detects early** — pattern memory identifies concerning trends before they become emergencies
-3. **Decides clearly** — AI triage tells caregivers exactly whether to stay home, go to a clinic, or go to A&E immediately
+2. **Sees clearly** — dual-AI photo triage via Google Cloud Vision + Gemini Vision
+3. **Decides clinically** — AI triage tells caregivers exactly whether to stay home, go to a clinic, or go to A&E
 
 ---
 
-### Why WhatsApp?
-
-WhatsApp penetration in Malaysia exceeds **85%** across all age groups, including elderly caregivers in rural and semi-urban areas. It requires no onboarding friction, no app store, and works on the cheapest Android phone with a data plan.
-
-Every other solution in this space requires a dedicated app, a wearable device, or a trained nurse. KAI requires only a phone number.
-
----
-
-## 3. How It Works
-
-### Onboarding (One Time, ~2 Minutes)
-
-When a caregiver messages KAI for the first time, a guided 8-step setup captures:
-
-- Language preference (English or Bahasa Malaysia)
-- Caregiver name and relationship to patient
-- Patient name, age, and primary condition (Diabetes, Hypertension, Stroke recovery, Dementia)
-- Current medication list
-- Preferred daily check-in times
-
-All data is stored securely in Firebase Firestore and used to personalise every subsequent interaction.
-
----
-
-### Daily Check-In Flow
-
-At the caregiver's configured times, KAI initiates a structured check-in via WhatsApp:
+## 3. Full System Architecture
 
 ```
-Hi Sarah 👋
-Let's check on Bobby today.
+┌─────────────────────────────────────────────────────────────────────┐
+│                           CAREGIVER                                 │
+│              (WhatsApp — any phone, any age group)                  │
+│              Text messages + Photo attachments                      │
+└─────────────────────────────┬───────────────────────────────────────┘
+                              │  HTTPS Webhook
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    TWILIO WHATSAPP BUSINESS API                      │
+│         Inbound: webhook POST to /webhook                            │
+│         Outbound: TwiML response OR direct Twilio API call           │
+│         Photo delivery: MediaUrl0 + MediaContentType0                │
+└─────────────────────────────┬───────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│              EXPRESS SERVER  (Node.js + TypeScript)                  │
+│              whatsapp/whatsapp.ts — central state machine            │
+│                                                                      │
+│  ┌──────────────────────┐    ┌────────────────────────────────────┐  │
+│  │   STATE MACHINE      │    │       GENKIT AI FLOWS              │  │
+│  │                      │    │                                    │  │
+│  │  Onboarding (10 steps│◄──►│  aiResponseFlow — general Q&A     │  │
+│  │  Check-in (3 steps)  │    │  triageFlow — clinical triage      │  │
+│  │  Vital logging       │    │  (HOME CARE / CLINIC / A&E)        │  │
+│  │  Wellness check      │    │  analyzeImage — KAI Eyes           │  │
+│  │  Escalation choice   │    │  analyzeMedicationSafety           │  │
+│  │  Concern detail      │    │    — symptom-drug correlation      │  │
+│  └──────────────────────┘    └────────────────────────────────────┘  │
+│                                                                      │
+│  ┌───────────────────────────────────────────────────────────────┐   │
+│  │                   KAI EYES — PHOTO PIPELINE                   │   │
+│  │                                                               │   │
+│  │  1. Twilio delivers photo URL + MIME type                     │   │
+│  │  2. Ack caregiver immediately (beat 15s Twilio timeout)       │   │
+│  │  3. Async: download image with Basic auth                     │   │
+│  │  4. Google Cloud Vision API (OCR + labels + objects)          │   │
+│  │  5. Gemini 2.5 Flash multimodal (clinical interpretation)     │   │
+│  │  6. OpenFDA drug lookup if medication detected                │   │
+│  │  7. Medication safety analysis vs recent symptoms             │   │
+│  │  8. sendWhatsAppLong (auto-split at 1500 chars)               │   │
+│  │  9. Family alert if A&E verdict or drug mismatch              │   │
+│  └───────────────────────────────────────────────────────────────┘   │
+└──────────┬──────────────────────────┬──────────────────────────────┘
+           │                          │
+           ▼                          ▼
+┌─────────────────────┐   ┌──────────────────────────────────────────┐
+│  FIREBASE FIRESTORE  │   │         GOOGLE AI SERVICES               │
+│                      │   │                                          │
+│  users/{phone}       │   │  Gemini 2.5 Flash (via Gemini API)       │
+│  • Profile & lang    │   │  • Text: triage, Q&A, wellness           │
+│  • State flags       │   │  • Multimodal: image + text prompt       │
+│  • Family contact    │   │  • Multilingual: EN + Bahasa Malaysia    │
+│  • Check-in times    │   │  • Medication safety correlation         │
+│                      │   │                                          │
+│  checkins/{phone_dt} │   │  Google Cloud Vision API                 │
+│  • medication/meals  │   │  • TEXT_DETECTION (OCR drug labels)      │
+│  • concerns/vital    │   │  • LABEL_DETECTION (image classification)│
+│  • concernText       │   │  • OBJECT_LOCALIZATION (objects)         │
+│    (symptom history) │   │  • SAFE_SEARCH_DETECTION                 │
+│                      │   │                                          │
+│  messages/           │   │  Google Genkit v1.32                     │
+│  • Full audit log    │   │  • Typed Zod flows                       │
+│  • Vision results    │   │  • Trace observability (.genkit/)        │
+│                      │   │  • defineFlow + ai.generate()            │
+└─────────────────────┘   └──────────────────────────────────────────┘
 
-1️⃣ Has Bobby taken their medication?
-Reply YES or NO
+┌──────────────────────────────────────────────────────────────────────┐
+│                      EXTERNAL APIs (FREE, NO KEY)                    │
+│                                                                      │
+│  OpenFDA API                                                         │
+│  • /drug/label.json — drug class, FDA warnings, brand names         │
+│  • /drug/enforcement.json — active drug recalls                      │
+│  • Cross-check: drug_interactions field vs full med list             │
+│                                                                      │
+│  node-cron Scheduler                                                 │
+│  • Every minute: fire check-in at configured time                    │
+│  • 30 min before check-in: medication reminder                       │
+│  • 2 hours after check-in: missed check-in family alert             │
+│  • Every Sunday 8pm: weekly family summary                           │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-Three questions are asked in sequence:
+---
 
-| Question | Purpose |
+## 4. AI & Technology Stack
+
+### Core AI
+
+| Component | Model / Service | Purpose |
+|---|---|---|
+| **Text triage** | Gemini 2.5 Flash via `googleai/gemini-2.5-flash` | Clinical triage: HOME CARE / CLINIC TODAY / A&E NOW |
+| **General Q&A** | Gemini 2.5 Flash | Free-text caregiver questions, urgency scoring |
+| **KAI Eyes vision** | Gemini 2.5 Flash multimodal | Analyze wound, medication, urine, face photos |
+| **Medication safety** | Gemini 2.5 Flash | Correlate symptoms vs identified drug — flag concerns |
+| **Image grounding** | Google Cloud Vision API | OCR text extraction, object/label detection before Gemini |
+
+### AI Orchestration
+
+| Tool | Version | Role |
+|---|---|---|
+| **Google Genkit** | v1.32.0 | Flow orchestration, type-safe prompts, trace logging |
+| **@genkit-ai/google-genai** | v1.32.0 | Gemini API plugin for Genkit |
+| **@genkit-ai/vertexai** | v1.32.0 | Vertex AI plugin (available, unused in current flows) |
+| **Zod schemas** | via Genkit | Input/output validation for all AI flows |
+| **Genkit trace viewer** | built-in | Debug AI flows at `http://localhost:4000` via `genkit start` |
+
+### Infrastructure
+
+| Tool | Version | Role |
+|---|---|---|
+| **Firebase Admin SDK** | v13.8 | Firestore read/write, ADC authentication |
+| **Firestore** | Google Cloud | User profiles, check-in logs, symptom history |
+| **Twilio WhatsApp API** | v5.13 | Inbound webhook + outbound message delivery |
+| **Express** | v5.2 | HTTP server, webhook handler |
+| **node-cron** | v4.2 | Scheduled check-ins, reminders, weekly summaries |
+| **google-auth-library** | via Firebase SDK | Application Default Credentials for Cloud Vision |
+| **OpenFDA API** | public, free | Drug labels, FDA warnings, active recalls |
+
+### Language & Runtime
+
+| Tool | Role |
 |---|---|
-| Medication taken? | Track adherence; trigger advice if missed |
-| Meals eaten? | Monitor nutrition; prompt intervention if skipped |
-| Any concerns today? | Open the door to AI triage if YES |
-
-Each NO answer triggers **specific, actionable advice** — not generic reminders. A missed medication response references the patient's actual medications by name.
+| **Node.js v23** | Runtime |
+| **TypeScript v5.9** | Type safety across all modules |
+| **ts-node** | Direct TypeScript execution |
+| **dotenv** | Environment variable management |
 
 ---
 
-### Care Score
+## 5. Complete Feature List
 
-At the end of every check-in, KAI calculates a daily Care Score:
+### Onboarding (10 steps, one-time setup)
 
-```
-📊 Bobby's Care Score Today: 85/100
+- Language selection: English or Bahasa Malaysia
+- Caregiver name + relationship
+- Patient name, age, primary condition
+- Medication list
+- Preferred check-in times (supports multiple: "8am 8pm")
+- Emergency family contact name + phone (optional, skippable)
 
-• Medication: ✅
-• Meals: ⚠️
-• Concerns: None 👍
+All data persisted to `users/{phone}` in Firestore.
 
-Status: Slightly at risk 🟡
-```
+---
 
-| Score | Status |
-|---|---|
-| 100 | All good 💚 |
-| 80–99 | Slightly at risk 🟡 |
-| 50–79 | Needs attention ⚠️ |
-| 0–49 | High risk 🔴 |
+### Daily Check-In (automated, cron-scheduled)
+
+- Fires at caregiver-configured times every day
+- 3 structured questions: medication taken, meals eaten, any concerns
+- Per-question NO responses trigger specific advice (not generic)
+- Check-in data saved to `checkins/{phone}_{date}`
+- Daily Care Score (0–100) shown at end of check-in
 
 ---
 
 ### Vital Sign Logging
 
-After the Care Score, KAI asks for one condition-specific vital reading:
-
-- **Diabetes** → Blood sugar (mmol/L)
-- **Hypertension** → Blood pressure (e.g., 130/85)
-- **Stroke / Dementia** → Condition score 1–5
-
-Readings are stored daily and analysed for trends. KAI alerts the caregiver when readings are outside safe ranges or rising for three consecutive days:
-
-```
-📈 Bobby's blood pressure has risen for 3 consecutive days.
-Consider a clinic visit before this becomes urgent.
-```
+- Condition-specific: Blood sugar (diabetes), Blood pressure (hypertension), Condition score 1–5 (stroke/dementia)
+- Stored per day; last 7 readings loaded for trend analysis
+- Alerts on: critically low/high values, 3 consecutive days of rising readings
+- Family auto-notified if 🚨 critical alert fires
 
 ---
 
-### Health Memory & Pattern Detection
+### Pattern Memory (7-day lookback)
 
-KAI scans the last 7 days of check-in history before every session. If concerning patterns are detected, they surface at the start of the check-in:
-
-```
-I noticed:
-💊 Bobby missed medication 3x this week
-🍽️ Bobby skipped meals 2x this week
-
-Let's check in today 👇
-```
-
-When patterns cross a risk threshold, KAI triggers a structured escalation:
-
-```
-⚠️ KAI Insight:
-Bobby has missed medication 3 times recently.
-
-Would you like me to:
-1️⃣ Set a medication reminder
-2️⃣ Notify a family member
-3️⃣ Book a teleconsult
-
-Reply 1, 2, or 3
-```
+- Tracks: missed medication count, skipped meal count, raised concerns count
+- Surfaced at start of each check-in as personalised observation
+- Escalation threshold: ≥2 missed meds or skipped meals in a week
+- Burnout threshold: ≥3 concern flags in a week
 
 ---
 
-### AI Triage — "Should I Go to A&E?"
+### AI Triage
 
-When a caregiver reports a concern, KAI does not give generic advice. It performs a **clinical triage assessment** using the patient's full profile — condition, medications, age, and the week's pattern history — and returns one of three clear verdicts:
+- Triggered when caregiver describes a concern after check-in
+- Input: concern text + full patient profile + 7-day pattern history
+- Output: HOME CARE / CLINIC TODAY / GO TO A&E NOW with specific steps
+- CLINIC TODAY responses include teleconsult links (DoctorOnCall + KKMNow)
+- A&E verdict triggers immediate family WhatsApp alert
 
-**Home Care:**
-```
-🩺 Triage: HOME CARE
+---
 
-Sarah, Bobby's dizziness may be related to his blood pressure medication — this is manageable at home for now.
+### KAI Eyes — Photo Triage
 
-✅ What to do now:
-• Have Bobby sit or lie down immediately
-• Check blood pressure — if above 160/100, proceed to clinic
-• Withhold Amlodipine until you speak to a doctor
+- Caregiver sends any photo (wound, medication, urine, face/eyes)
+- Immediate acknowledgment to beat Twilio's 15-second response timeout
+- **Stage 1 — Google Cloud Vision API:**
+  - OCR: extracts all text (drug names, dosage, expiry)
+  - Label detection: classifies visual content (wound, pill, face, etc.)
+  - Object localization: identifies specific objects
+  - Results injected into Gemini as "verified machine data"
+- **Stage 2 — Gemini 2.5 Flash multimodal:**
+  - Clinical interpretation grounded by Cloud Vision facts
+  - 5 categories: WOUND_SKIN, MEDICATION, URINE, EYES_FACE, NOT_MEDICAL
+  - Structured output: What I see → Clinical interpretation → Triage verdict
+  - For MEDICATION: full drug check (name, dosage, expiry, match vs patient records)
+- **Stage 3 — OpenFDA enrichment** (if medication detected):
+  - Drug class + FDA warnings
+  - Active recall check
+  - Drug interaction cross-check vs full medication list
+- **Stage 4 — Symptom safety analysis** (if medication + recent symptoms):
+  - Gemini correlates last 7 days of symptom notes vs identified drug
+  - Flags known side-effect patterns (observational only, never prescribes)
+  - Hard disclaimer appended: "Do not change medication without consulting your doctor"
+- Long responses auto-split into multiple WhatsApp messages (1500 char limit)
+- Family alert sent if A&E verdict or drug mismatch detected
 
-⏰ Escalate to clinic if: dizziness worsens or Bobby becomes unresponsive
-```
+---
 
-**Clinic Today:**
-```
-🩺 Triage: CLINIC TODAY
+### Medication Intelligence
 
-🏥 This needs a doctor but is not an emergency. Book a clinic visit today.
-• Tell the doctor: recurring chest tightness since this morning, diabetic on Metformin 500mg
-• While waiting: keep Bobby rested, avoid exertion
+- `/updatemeds <list>` — updates patient medication list in Firestore
+- Runs OpenFDA drug interaction check across full medication list on update
+- Symptom notes saved every time caregiver describes a concern
+- Medication photos correlate against 7 days of saved symptom history
+- Safety framing: flags concerns, never instructs to give or withhold medication
 
-⚠️ Go to A&E instead if: pain spreads to arm or jaw, difficulty breathing
-```
+---
 
-**Go to A&E Now:**
-```
-🩺 Triage: GO TO A&E NOW
+### Medication Reminders
 
-🚨 Go to A&E immediately — do not wait.
-📋 Show this to the doctor:
-Patient: Bobby Tan, 72 — Hypertension — on Amlodipine 5mg, Metformin 500mg
-Concern: sudden confusion and slurred speech since 20 minutes ago
-🚗 While travelling: keep Bobby seated upright, do not give food or water
-```
+- Fires 30 minutes before each scheduled check-in time
+- Lists patient's actual medications by name
+- Only fires if `user.medications` is set
 
-This triage decision is the **core of KAI's ED prevention mission** — it filters avoidable visits while ensuring real emergencies reach the hospital faster.
+---
+
+### Family Contact System
+
+| Trigger | Alert Sent To |
+|---|---|
+| A&E triage verdict | Family WhatsApp |
+| Emergency urgency from free-text | Family WhatsApp |
+| Medication mismatch in photo | Family WhatsApp |
+| Critically abnormal vital (🚨) | Family WhatsApp |
+| Caregiver burnout (3+ concerns/week) | Family WhatsApp |
+| Caregiver reports "really struggling" | Family WhatsApp |
+| Escalation choice 2 | Weekly summary to family |
+| No check-in response for 2+ hours | Family WhatsApp (missed check-in alert) |
+| Every Sunday 8pm | Weekly care summary to family |
+
+---
+
+### Weekly Family Summary
+
+- Sent every Sunday at 8pm via node-cron
+- Includes: medication adherence (7-day), meal consistency, concern count
+- Weekly Care Score (0–100) calculated from patterns
+- Sent to `user.familyPhone` if registered
 
 ---
 
 ### Caregiver Wellness Check
 
-Every 3 days, KAI asks the one question no other health app asks:
-
-```
-💙 Sarah, how are YOU holding up today?
-
-1. I'm okay
-2. A bit tired
-3. Really struggling
-```
-
-Caregiver burnout is one of the leading indirect causes of patient deterioration. When caregivers are exhausted, medications get missed, symptoms go unnoticed, and ED visits increase. KAI tracks caregiver wellbeing and responds with specific, warm support — not platitudes.
+- Fires every 3 days (configurable via `lastWellnessCheck`)
+- 3-option response: "I'm okay" / "A bit tired" / "Really struggling"
+- Warm, specific support responses — not generic platitudes
+- "Really struggling" triggers family alert and shows crisis resources:
+  - Befrienders KL: 03-7627 2929 (24hr)
+  - MIASA: +603 2780 6803
 
 ---
 
-### Bahasa Malaysia Support
+### Escalation Menu
 
-KAI detects language preference during onboarding and conducts all interactions — check-ins, triage, wellness checks, AI responses — in the caregiver's chosen language.
-
+Shown when ≥2 missed meds or skipped meals detected in a week:
 ```
-Hi Sarah 👋
-Mari kita semak Bobby hari ini.
-
-1️⃣ Adakah Bobby sudah ambil ubat?
-Balas YA atau TIDAK
+1️⃣ Set a medication reminder
+2️⃣ Notify a family member
+3️⃣ Book a teleconsult
 ```
-
-This is powered by Gemini's native multilingual capability — no translation layer, no degraded quality. This matters in Malaysia where many primary caregivers, particularly in semi-urban and rural areas, are more comfortable communicating in Bahasa Malaysia.
+Each choice has real action: reminder set / family WhatsApp sent / teleconsult links sent.
 
 ---
 
-### Technology Stack
+### Bilingual Support (EN + Bahasa Malaysia)
 
-| Layer | Technology |
-|---|---|
-| AI Orchestration | **Google Genkit** (typed flows, trace observability) |
-| AI Model | **Gemini 2.0 Flash** via **Google AI (Gemini API)** |
-| Database | **Firebase Firestore** (real-time, serverless) |
-| Messaging | **Twilio WhatsApp Business API** |
-| Runtime | Node.js + TypeScript on **Google Cloud Run** |
-
-KAI's AI logic is structured as **Genkit flows** — fully typed with Zod schemas, observable through Genkit's built-in trace viewer, and running on Vertex AI for enterprise-grade reliability. Every triage decision and AI response is a traceable, auditable flow.
+- Set once during onboarding, applied to every interaction
+- All check-in questions, triage responses, wellness checks, alerts in BM or EN
+- Gemini generates native BM — not translated, not degraded
 
 ---
 
-## System Architecture High-Level Overview 🏗️
+## 6. All User Scenarios — End to End
+
+### Scenario 1: First-time Setup
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      CAREGIVER                          │
-│                  (WhatsApp Message)                     │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│               TWILIO WHATSAPP API                       │
-│          (Inbound webhook / Outbound TwiML)             │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│           EXPRESS SERVER — Google Cloud Run             │
-│                                                         │
-│  ┌──────────────────────┐  ┌─────────────────────────┐  │
-│  │    STATE MACHINE     │  │    GENKIT AI FLOWS      │  │
-│  │                      │  │                         │  │
-│  │  • Onboarding        │  │  aiResponseFlow         │  │
-│  │  • Check-in steps    │◄►│  (Assessment + Urgency  │  │
-│  │  • Vital logging     │  │   + Steps)              │  │
-│  │  • Wellness check    │  │                         │  │
-│  │  • Escalation        │  │  triageFlow             │  │
-│  │  • Triage routing    │  │  (Home Care / Clinic /  │  │
-│  └──────────────────────┘  │   A&E Now)              │  │
-│                            └─────────────────────────┘  │
-└──────────────┬──────────────────────────┬───────────────┘
-               │                          │
-               ▼                          ▼
-┌──────────────────────────┐  ┌───────────────────────────┐
-│   FIREBASE FIRESTORE     │  │  VERTEX AI (Google Cloud) │
-│                          │  │                           │
-│  users/{phone}           │  │  Gemini 2.5 Flash         │
-│  • Profile & language    │  │  • Multilingual (EN / BM) │
-│  • State flags           │  │  • Triage reasoning       │
-│  • lastWellnessCheck     │  │  • Guided micro-actions   │
-│                          │  │  • Warm, human tone       │
-│  checkins/{phone_date}   │  │                           │
-│  • medication / meals    │  │  Genkit Flow Tracing      │
-│  • concerns / vital      │  │  • Observable end-to-end  │
-│                          │  │  • Typed Zod schemas      │
-│  messages/               │  │  • Auditable AI decisions │
-│  • Full audit log        │  │                           │
-└──────────────────────────┘  └───────────────────────────┘
+Caregiver messages KAI for first time
+→ Language selection (EN / BM)
+→ 10-step guided onboarding
+→ Profile saved: name, patient, condition, medications, check-in times, family contact
+→ Completion message with full summary
 ```
 
 ---
 
-## 4. Impact & Why This Matters
+### Scenario 2: Daily Check-In (All Good)
 
-### Directly Addressing ED Overcrowding
+```
+[8:00 AM — cron fires]
+KAI: "Hi Sarah 👋 Has Bobby taken their medication? YES or NO"
+Sarah: YES
+KAI: "Great 👍 Thanks for confirming. Has Bobby eaten their meals? YES or NO"
+Sarah: YES
+KAI: "Wonderful 😊 Any concerns about Bobby today? YES or NO"
+Sarah: NO
+KAI: "📊 Bobby's Care Score Today: 100/100 ✅ All good 💚"
+KAI: "💉 What was Bobby's blood sugar today? (e.g., 7.2 mmol/L) — or type skip"
+Sarah: 6.4
+KAI: "✅ Recorded: 6.4"
+```
 
-KAI's triage feature directly intervenes at the moment a caregiver decides whether to go to the Emergency Department. By providing a clear, AI-driven verdict — with specific home care steps or a "go to A&E now" directive — KAI converts the caregiver's uncertainty into confident, appropriate action.
+---
 
-**If KAI prevents just 2 unnecessary ED visits per user per month:**
+### Scenario 3: Missed Medication + Concern Raised
 
-| Users | ED Visits Prevented / Month | Cost Saved (RM 2,500/visit) |
+```
+[8:00 AM — cron fires]
+KAI: "Has Bobby taken their medication?"
+Sarah: NO
+KAI: "⚠️ It looks like Bobby may have missed medication.
+     Recommended:
+     • Give medication if safe to do so
+     • If unsure, check prescription or contact doctor
+     
+     2️⃣ Has Bobby eaten their meals? YES or NO"
+Sarah: YES
+KAI: "Any concerns about Bobby today?"
+Sarah: YES
+KAI: "I hear you 💙 What concerns are you noticing about Bobby?
+     Describe what's happening and I'll help you assess."
+Sarah: "Bobby has been dizzy since this morning and can't stand up properly"
+KAI: [Gemini triage with patient profile + 7-day patterns]
+     "🩺 Triage: CLINIC TODAY
+     🏥 This needs a doctor's assessment today — not an emergency.
+     • Tell the doctor: dizziness with difficulty standing since morning, diabetic on Metformin 500mg + Amlodipine 5mg, missed medication this morning
+     • While waiting: have Bobby sit or lie down, check if medication was taken yesterday
+     ⚠️ Go to A&E instead if: Bobby becomes unresponsive or speech becomes slurred
+     
+     🏥 Book now:
+     • DoctorOnCall: https://www.doctoroncall.com.my
+     • KKMNow: https://kkmapp.moh.gov.my"
+```
+
+---
+
+### Scenario 4: KAI Eyes — Medication Photo
+
+```
+Sarah sends photo of Apidra SoloStar insulin pen
+Caption: "may i consume this"
+
+KAI: "👁️ KAI Eyes is analyzing your photo... Results will arrive in a few seconds."
+
+[Async pipeline:]
+  Cloud Vision → OCR: "Apidra SoloStar Insulin glulisine 100 IU/mL SANOFI 5 SOLOSTAR injection pens"
+  Cloud Vision → Labels: "Medicine 95%, Medical equipment 89%"
+  Gemini → Grounded by OCR text:
+
+KAI: "👁️ KAI Eyes Assessment
+
+🔍 What I see:
+Apidra SoloStar insulin glulisine 100 IU/mL injection pen by Sanofi. Label clearly readable.
+
+🩺 Clinical interpretation:
+This is a rapid-acting insulin — for Bobby who is diabetic, timing of this injection is critical relative to meals. Confirm it matches the prescribed insulin type.
+
+📊 Triage: HOME CARE
+
+💊 Medication Check:
+• Identified: Apidra (insulin glulisine) 100 IU/mL
+• Match with Bobby's records: ✅ Correct medication
+• Dosage: 100 IU/mL (confirm prescribed units with doctor)
+• Expiry: Not visible in photo
+• Action: Verify the prescribed dose and inject within 15 minutes of a meal
+
+✅ What to do now:
+• Ensure Bobby has eaten or is about to eat before injecting
+• Inject at prescribed dose per doctor's instructions
+• Monitor for hypoglycemia (shaking, sweating, confusion) for 1-2 hours
+
+📋 FDA-Verified Drug Info (OpenFDA):
+💊 Drug class: Insulin [Human] [EPC]
+⚠️ FDA warning: Hypoglycemia is the most common adverse reaction..."
+
+[If recent symptom notes exist, adds:]
+"🔍 KAI Insight — Medication Safety Analysis:
+Bobby reported dizziness 2 days ago. Dizziness can be a symptom of hypoglycemia — a known risk with rapid-acting insulin. Worth discussing with your doctor before the next dose.
+⚠️ This is an observational flag only. Do not change any medication without consulting your doctor."
+```
+
+---
+
+### Scenario 5: KAI Eyes — Wound Photo
+
+```
+Sarah sends photo of skin rash on Bobby's leg
+
+KAI: "👁️ KAI Eyes Assessment
+
+🔍 What I see:
+Reddish, slightly raised skin area approximately 3-4cm in diameter on the lower leg. No visible open wound or discharge.
+
+🩺 Clinical interpretation:
+For Bobby who has diabetes, any skin change on the lower limbs carries higher risk due to impaired circulation and healing. This warrants monitoring.
+
+📊 Triage: HOME CARE
+
+✅ What to do now:
+• Keep the area clean and dry
+• Do not apply any cream or ointment without doctor advice
+• Monitor for spreading redness or warmth
+
+📸 Track it: Take another photo in 24 hours to monitor for changes.
+⏰ Escalate to clinic if: redness spreads beyond the affected area, or skin breaks open"
+```
+
+---
+
+### Scenario 6: A&E Verdict — Family Alert Fired
+
+```
+Sarah: "Bobby suddenly can't speak properly and his face looks droopy on one side"
+
+KAI: "🩺 Triage: GO TO A&E NOW
+     🚨 Go to A&E immediately — do not wait.
+     📋 Show this to the doctor:
+     Patient: Bobby Tan, 72 — Hypertension — on Amlodipine 5mg, Metformin 500mg
+     Concern: sudden facial drooping and speech difficulty — possible stroke
+     🚗 While travelling: keep Bobby seated upright, do not give food or water"
+
+[Family alert fired to registered family WhatsApp:]
+"🚨 EMERGENCY — KAI Alert
+Sarah has been advised to take Bobby to A&E immediately.
+Please call them now."
+```
+
+---
+
+### Scenario 7: Weekly Pattern Escalation
+
+```
+[After 3 days of missed medication detected]
+KAI: "I noticed:
+     💊 Bobby missed medication 3x this week
+     🍽️ Bobby skipped meals 2x this week
+     
+     ⚠️ KAI Insight:
+     Bobby has missed medication 3 times recently.
+     
+     Would you like me to:
+     1️⃣ Set a medication reminder
+     2️⃣ Notify a family member
+     3️⃣ Book a teleconsult
+     
+     Reply 1, 2, or 3"
+
+Sarah: 2
+KAI: "📲 Message sent to Ahmad (family member)."
+[Family receives weekly summary + pattern alert]
+```
+
+---
+
+### Scenario 8: Wellness Check
+
+```
+[Every 3 days, appended after check-in summary]
+KAI: "💙 Sarah, how are YOU holding up today?
+     1. I'm okay
+     2. A bit tired  
+     3. Really struggling"
+
+Sarah: 3
+KAI: "Sarah, you're doing something incredibly hard. Your feelings are valid.
+     
+     🆘 Support resources:
+     • Befrienders KL: 03-7627 2929 (24hr)
+     • MIASA: +603 2780 6803
+     
+     You are not alone in this 💙"
+[Family quietly alerted]
+```
+
+---
+
+### Scenario 9: Update Medication List + Interaction Check
+
+```
+Sarah: /updatemeds Metformin 500mg, Amlodipine 5mg, Warfarin 5mg, Aspirin 100mg
+
+KAI: "💊 Medication list updated for Bobby:
+     Metformin 500mg, Amlodipine 5mg, Warfarin 5mg, Aspirin 100mg
+     
+     ⚠️ Drug Interactions Found (source: RxNorm / NLM):
+     🔴 Warfarin + Aspirin:
+        ...concurrent use of aspirin may increase bleeding risk with warfarin...
+     🟡 Metformin + Amlodipine:
+        ...monitor blood glucose levels when used together..."
+```
+
+---
+
+## 7. Demo Flow (Hackathon Script)
+
+**Step 1** — Open WhatsApp on demo phone, send "Hi" to KAI number  
+→ Shows: onboarding starts in chosen language
+
+**Step 2** — Complete onboarding in 60 seconds with pre-filled responses  
+→ Shows: personalised profile saved, completion message
+
+**Step 3** — Trigger `/checkin`  
+→ Shows: memory observation + check-in questions fire
+
+**Step 4** — Answer: medication NO → meals YES → concerns YES → describe symptom  
+→ Shows: AI triage fires with patient-specific steps + teleconsult links
+
+**Step 5** — Send Apidra insulin photo with caption "may i consume this"  
+→ Shows: immediate ack → Cloud Vision OCR → Gemini clinical interpretation → FDA data → symptom correlation
+
+**Step 6** — Send `/updatemeds Warfarin 5mg, Aspirin 100mg`  
+→ Shows: interaction warning flags immediately
+
+**Step 7** — Trigger A&E verdict (describe stroke symptoms)  
+→ Shows: A&E output + family phone receives alert in real-time
+
+**Step 8** — Sunday cron demo: show weekly summary message received on family phone  
+→ Shows: full care score, adherence summary, caregiver attribution
+
+---
+
+## 8. Codebase Structure
+
+```
+myai2026/
+├── whatsapp/
+│   ├── whatsapp.ts        Central Express server + state machine (all routing)
+│   ├── ai.ts              General Q&A Genkit flow (aiResponseFlow)
+│   ├── triage.ts          Clinical triage Genkit flow (triageFlow)
+│   ├── vision.ts          KAI Eyes: download image + Gemini multimodal analysis
+│   ├── cloud-vision.ts    Google Cloud Vision API wrapper (OCR + labels)
+│   ├── medical-api.ts     OpenFDA lookup + drug interactions + medication safety AI
+│   ├── onboarding.ts      10-step guided onboarding state machine
+│   ├── checkin.ts         Check-in questions, scoring, cron scheduler
+│   ├── memory.ts          7-day pattern analysis, vital trends, symptom storage
+│   ├── wellness.ts        Caregiver wellness check logic
+│   ├── notify.ts          Twilio sendWhatsApp + sendWhatsAppLong (auto-split)
+│   ├── firebase.ts        Firestore init via ADC
+│   ├── genkit.ts          Genkit init with Google AI plugin
+│   ├── test-bot.ts        Local bot logic test runner
+│   ├── test-ai.ts         Genkit AI flow test runner
+│   └── test-firestore.ts  Firestore connectivity test
+├── app/                   Next.js frontend (unused in current scope)
+├── tsconfig.backend.json  TypeScript config for backend (commonjs, node resolution)
+├── tsconfig.json          Next.js frontend TypeScript config
+└── .env                   Environment variables
+```
+
+---
+
+## 9. Environment Setup
+
+### Required Environment Variables (`.env`)
+
+```bash
+# Twilio
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Google AI (Gemini)
+GEMINI_API_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Google Cloud (Firestore + Cloud Vision)
+GOOGLE_CLOUD_PROJECT=kai2026
+# No key file needed — uses Application Default Credentials (ADC)
+```
+
+### ADC Setup (one-time)
+
+```bash
+gcloud auth application-default login
+gcloud auth application-default set-quota-project kai2026
+```
+
+### Google Cloud APIs to Enable
+
+```
+Cloud Vision API
+Cloud Firestore API
+```
+
+### Twilio Setup
+
+1. Create a WhatsApp Sandbox at twilio.com/console
+2. Set webhook URL to `https://your-ngrok-url/webhook` (POST)
+3. Test with sandbox join code
+
+---
+
+## 10. Running the Bot
+
+```bash
+# Install dependencies
+npm install
+
+# Run backend server
+npm run backend
+# or directly:
+npx ts-node --project tsconfig.backend.json whatsapp/whatsapp.ts
+
+# Expose to Twilio via ngrok
+ngrok http 8080
+
+# Test AI flow only
+npx ts-node --project tsconfig.backend.json whatsapp/test-ai.ts
+
+# Test Firestore connectivity
+npx ts-node --project tsconfig.backend.json whatsapp/test-firestore.ts
+
+# Test bot logic (no Twilio needed)
+npx ts-node --project tsconfig.backend.json whatsapp/test-bot.ts
+
+# Inspect Genkit traces (AI flow debugger)
+npx genkit start
+# Open http://localhost:4000
+```
+
+---
+
+## 11. Extended Knowledge — Unused but Useful Google Tools
+
+These tools are installed or available but not yet fully wired into the current flow. Relevant for future development:
+
+### Vertex AI (`@genkit-ai/vertexai` — installed, unused)
+
+Vertex AI is the enterprise-grade alternative to the Gemini API. Swap the plugin:
+
+```typescript
+import { vertexAI } from '@genkit-ai/vertexai';
+export const ai = genkit({ plugins: [vertexAI({ projectId: 'kai2026', location: 'us-central1' })] });
+// Model: 'vertexai/gemini-2.5-flash'
+```
+
+Benefits: higher rate limits, SLA, data residency, no API key needed (uses ADC).  
+Use case: production deployment on Cloud Run.
+
+---
+
+### Google Cloud Speech-to-Text
+
+WhatsApp allows voice notes. A caregiver sending a voice note could be transcribed and fed into the triage flow:
+
+```
+Voice note → Speech-to-Text API → text → getTriageResponse()
+```
+
+Relevant for elderly caregivers who cannot type easily.
+
+---
+
+### Google Cloud Natural Language API
+
+Could be used to extract medical entities (symptoms, body parts, medications) from free-text caregiver messages before triage, improving accuracy:
+
+- Entity extraction: `analyzeEntities()` → identify drug names, body parts, symptoms
+- Sentiment analysis: detect distressed caregiver before triage runs
+
+---
+
+### Firebase Cloud Messaging (FCM)
+
+For a future companion mobile app, FCM could deliver push notifications alongside WhatsApp:
+- Medication reminders with one-tap "Confirm" action
+- Care score daily summary as a notification card
+
+---
+
+### Google Cloud Run (Deployment Target)
+
+```bash
+gcloud run deploy kai-bot \
+  --source . \
+  --region asia-southeast1 \
+  --allow-unauthenticated \
+  --set-env-vars GOOGLE_CLOUD_PROJECT=kai2026
+```
+
+Cloud Run gives ADC automatically — no service account key file needed, no `GOOGLE_APPLICATION_CREDENTIALS`. The `firebase.ts` and `cloud-vision.ts` ADC setup works unchanged.
+
+---
+
+### Vertex AI Agent Builder (formerly Dialogflow CX)
+
+Could replace the current custom state machine for onboarding and check-in flows with a visual agent designer. Benefits:
+- Drag-and-drop conversation flows
+- Built-in slot filling (instead of manual step tracking in Firestore)
+- Integrated knowledge base for medication Q&A
+
+---
+
+### Firebase Extensions — Firestore + BigQuery Sync
+
+Automatically sync all `checkins/` and `messages/` documents to BigQuery for analytics:
+- Care score trends over population
+- ED visit prediction modelling
+- Medication adherence patterns by condition
+
+---
+
+### Google Maps Platform — Nearest A&E Locator
+
+When triage says "GO TO A&E NOW", append the nearest hospital:
+
+```typescript
+const mapsUrl = `https://www.google.com/maps/search/hospital+emergency/@${lat},${lng},13z`;
+```
+
+Requires user location (WhatsApp location sharing) or postcode from onboarding.
+
+---
+
+### Looker Studio Dashboard
+
+Connect Firestore → BigQuery → Looker Studio to build a real-time operations dashboard showing:
+- Active users by region
+- Care score distribution
+- A&E vs Clinic vs Home Care triage split
+- Medication adherence rates
+
+---
+
+## 12. Impact & Vision
+
+### ED Prevention at Scale
+
+If KAI prevents just **2 unnecessary ED visits per user per month**:
+
+| Users | Visits Prevented / Month | Cost Saved (RM 2,500/visit) |
 |---|---|---|
 | 1,000 | 2,000 | RM 5,000,000 |
 | 10,000 | 20,000 | RM 50,000,000 |
 
-And for each visit prevented, one fewer elderly patient waits 4–6 hours in an overcrowded ED — freeing capacity for those who truly need it.
+Each visit prevented frees capacity for patients who truly need emergency care.
+
+### Why WhatsApp
+
+WhatsApp penetration in Malaysia exceeds **85%** across all age groups including rural and elderly caregivers. No app download. No account creation. Works on the cheapest Android phone with a data plan.
+
+### The Future
+
+- **Predictive admission risk scoring** from 30-day vital + adherence patterns
+- **MySejahtera / KKiM integration** — sync triage decisions with Malaysia's national health system
+- **Multi-patient support** — one caregiver, multiple family members
+- **Hospital discharge protocol** — KAI auto-activates when patient is discharged, following the doctor's specific home care plan
 
 ---
 
-### Reaching Caregivers Where They Are
-
-KAI works on any smartphone with WhatsApp. There is no app to download, no account to create beyond a phone number, and no learning curve. The Bahasa Malaysia support means KAI is accessible to caregivers who have been excluded from English-first health technology.
-
-This is not a product for urban, tech-savvy early adopters. It is designed for the daughter in Seremban caring for her diabetic father, the son in Kuantan managing his mother's hypertension from a rented room — people who currently have no support system between the hospital and home.
-
----
-
-### Caregiver Wellbeing as a Healthcare Outcome
-
-There are an estimated **3.4 million informal caregivers** in Malaysia, most of them unpaid family members. Their mental and physical health is not tracked. Their burnout is not treated. And when they collapse — emotionally or physically — their patients suffer the consequences.
-
-KAI is the only system in this space that treats caregiver wellbeing as a clinical variable. The wellness check is not a nice-to-have feature. It is a recognition that sustainable home care depends on the person doing the caring.
-
----
-
-### The Vision
-
-KAI is a foundation. The data it collects — daily vitals, adherence patterns, symptom trends, triage outcomes — is the raw material for:
-
-- **Predictive hospital admission risk scoring** using historical pattern data
-- **Drug interaction knowledge base** via Vertex AI Agent Builder, giving caregivers access to verified medication guidance
-- **Family coordination loop** — daily health briefs sent to all registered family members, not just the primary caregiver
-- **Integration with Malaysia's public telehealth infrastructure** (MySejahtera, KKiM)
-
-Every check-in KAI completes is a data point that makes the next generation of elderly care in Malaysia smarter, earlier, and more human.
-
----
-
-*Built for the Google AI Hackathon 2026 — powered by Google Genkit, Vertex AI, and Firebase.*
+*Built for the Google AI Hackathon 2026*  
+*Stack: Google Genkit · Gemini 2.5 Flash · Google Cloud Vision · Firebase Firestore · Twilio WhatsApp API · OpenFDA · Node.js + TypeScript*
