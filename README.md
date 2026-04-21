@@ -735,19 +735,6 @@ npx genkit start
 
 These tools are installed or available but not yet fully wired into the current flow. Relevant for future development:
 
-### Vertex AI (`@genkit-ai/vertexai` — installed, unused)
-
-Vertex AI is the enterprise-grade alternative to the Gemini API. Swap the plugin:
-
-```typescript
-import { vertexAI } from '@genkit-ai/vertexai';
-export const ai = genkit({ plugins: [vertexAI({ projectId: 'kai2026', location: 'us-central1' })] });
-// Model: 'vertexai/gemini-2.5-flash'
-```
-
-Benefits: higher rate limits, SLA, data residency, no API key needed (uses ADC).  
-Use case: production deployment on Cloud Run.
-
 ---
 
 ### Google Cloud Speech-to-Text
@@ -779,35 +766,12 @@ For a future companion mobile app, FCM could deliver push notifications alongsid
 
 ---
 
-### Google Cloud Run (Deployment Target)
-
-```bash
-gcloud run deploy kai-bot \
-  --source . \
-  --region asia-southeast1 \
-  --allow-unauthenticated \
-  --set-env-vars GOOGLE_CLOUD_PROJECT=kai2026
-```
-
-Cloud Run gives ADC automatically — no service account key file needed, no `GOOGLE_APPLICATION_CREDENTIALS`. The `firebase.ts` and `cloud-vision.ts` ADC setup works unchanged.
-
----
-
 ### Vertex AI Agent Builder (formerly Dialogflow CX)
 
 Could replace the current custom state machine for onboarding and check-in flows with a visual agent designer. Benefits:
 - Drag-and-drop conversation flows
 - Built-in slot filling (instead of manual step tracking in Firestore)
 - Integrated knowledge base for medication Q&A
-
----
-
-### Firebase Extensions — Firestore + BigQuery Sync
-
-Automatically sync all `checkins/` and `messages/` documents to BigQuery for analytics:
-- Care score trends over population
-- ED visit prediction modelling
-- Medication adherence patterns by condition
 
 ---
 

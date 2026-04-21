@@ -97,7 +97,7 @@ export default function ReportPage() {
 
   return (
     <IPhone13Frame>
-      <div className="flex min-h-full flex-col bg-slate-900 relative overflow-hidden text-white font-serif">
+      <div className="flex min-h-full flex-col bg-slate-900 relative text-white font-serif">
         {/* Galaxy Background */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           <Galaxy 
@@ -151,7 +151,7 @@ export default function ReportPage() {
         )}
 
         {!loading && profile && (
-          <div className="flex flex-col gap-4 p-4 pb-8 overflow-y-auto z-10">
+          <div className="flex flex-col gap-4 p-4 pb-8 z-10">
 
             {/* Patient profile card */}
             <div className="rounded-2xl bg-slate-800/60 backdrop-blur-md border border-slate-700 p-4 shadow-xl">
