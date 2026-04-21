@@ -3,6 +3,8 @@
 > A WhatsApp-based AI caregiver assistant built for reducing emergency department overcrowding in Malaysia's ageing society — one check-in at a time.
 > AI-Powered Home Care Coordination & Emergency Prevention
 
+Slide link : https://www.canva.com/design/DAHHHFD4usg/sfyD7HGvGPzygJ01Stuexg/edit
+
 ---
 
 ## 1. The Problem
