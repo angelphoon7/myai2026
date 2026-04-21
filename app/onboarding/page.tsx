@@ -79,7 +79,7 @@ const T = {
 };
 
 const TWILIO_NUMBER = "+1 415 523 8886";
-const JOIN_CODE = process.env.NEXT_PUBLIC_TWILIO_JOIN_CODE ?? "join <your-sandbox-word>";
+const JOIN_CODE = "join her-dream";
 
 export default function Onboarding() {
   const router = useRouter();

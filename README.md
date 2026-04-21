@@ -526,23 +526,6 @@ KAI: "💊 Medication list updated for Bobby:
 
 ---
 
-## 7. Demo Flow (Hackathon Script)
-
-**Step 1** — Open WhatsApp on demo phone, send "Hi" to KAI number  
-→ Shows: onboarding starts in chosen language
-
-**Step 2** — Complete onboarding in 60 seconds with pre-filled responses  
-→ Shows: personalised profile saved, completion message
-
-**Step 3** — Trigger `/checkin`  
-→ Shows: memory observation + check-in questions fire
-
-**Step 4** — Answer: medication NO → meals YES → concerns YES → describe symptom  
-→ Shows: AI triage fires with patient-specific steps + teleconsult links
-
-**Step 5** — Send Apidra insulin photo with caption "may i consume this"  
-→ Shows: immediate ack → Cloud Vision OCR → Gemini clinical interpretation → FDA data → symptom correlation
-
 **Step 6** — Send `/updatemeds Warfarin 5mg, Aspirin 100mg`  
 → Shows: interaction warning flags immediately
 

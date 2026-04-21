@@ -66,9 +66,12 @@ function buildCompletionMessage(profile: Partial<UserProfile>, lang: "en" | "ms"
   const familyLine = profile.familyName
     ? (lang === "ms" ? `\n👨‍👩‍👧 Kenalan kecemasan: ${profile.familyName}` : `\n👨‍👩‍👧 Emergency contact: ${profile.familyName}`)
     : "";
+  const joinLine = lang === "ms"
+    ? `\n\n📲 Untuk mula berbual, hantar *join her-dream* ke +1 415 523 8886 di WhatsApp.`
+    : `\n\n📲 To start chatting, send *join her-dream* to +1 415 523 8886 on WhatsApp.`;
   return lang === "ms"
-    ? `Persediaan selesai, ${profile.caregiverName}! Saya akan mula memantau ${profile.patientName} dari hari ini.${medLine}${familyLine} 💙`
-    : `Setup complete, ${profile.caregiverName}! I'll start monitoring ${profile.patientName} from today.${medLine}${familyLine} 💙`;
+    ? `Persediaan selesai, ${profile.caregiverName}! Saya akan mula memantau ${profile.patientName} dari hari ini.${medLine}${familyLine}${joinLine} 💙`
+    : `Setup complete, ${profile.caregiverName}! I'll start monitoring ${profile.patientName} from today.${medLine}${familyLine}${joinLine} 💙`;
 }
 
 export async function getUser(phone: string): Promise<UserProfile | null> {
