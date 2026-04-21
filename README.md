@@ -316,17 +316,6 @@ Each choice has real action: reminder set / family WhatsApp sent / teleconsult l
 
 ## 6. All User Scenarios — End to End
 
-### Scenario 1: First-time Setup
-
-```
-Caregiver messages KAI for first time
-→ Language selection (EN / BM)
-→ 10-step guided onboarding
-→ Profile saved: name, patient, condition, medications, check-in times, family contact
-→ Completion message with full summary
-```
-
----
 
 ### Scenario 2: Daily Check-In (All Good)
 
