@@ -313,47 +313,6 @@ Each choice has real action: reminder set / family WhatsApp sent / teleconsult l
 
 ---
 
-### Web Frontend (Next.js 15)
-
-**Login Page** (`/`)
-- Animated video carousel background (caregiver.mp4, feed.mp4, shirt.mp4)
-- Sign in form with username/password + Google sign-in button
-- Sign up button routes to `/onboarding`
-
-**Web Onboarding** (`/onboarding`)
-- 9-step guided form matching WhatsApp onboarding fields exactly
-- Bilingual (English / Bahasa Malaysia) toggled in step 1
-- Quick-select chips for relationship, condition, check-in time
-- Saves profile to Firestore via POST `/api/onboard`
-- Completion screen: Twilio number + join code to copy, Open WhatsApp button
-- After clicking Open WhatsApp: 5-second countdown then auto-redirects to `/report`
-
-**Caregiver Dashboard** (`/home`)
-- Loads patient data via GET `/api/report?phone=`
-- **Home tab:** greeting, patient summary chip with avg care score, today's check-in status (medication taken/missed, meals eaten/missed), 7-day bar chart, latest vital reading, quick action grid, current medications reminder
-- **Report tab:** full 30-day clinical report (same as `/report`) embedded inline
-- **Settings tab:** account info, check-in time, re-run onboarding, logout
-- Bottom navigation bar switching between all three tabs
-
-**Health Report** (`/report`)
-- Shareable standalone URL: `/report?phone=+60123456789`
-- Patient profile card: name, age, condition, caregiver, relationship, medications, emergency contact
-- 7-day compliance stats: medication %, meal %, concern count (colour-coded)
-- Daily check-in timeline: MED ✓/✗, MEAL ✓/✗, concern flag, vital, care score badge per day
-- Vital readings history (blood sugar / BP depending on condition)
-- Caregiver free-text notes with dates
-- "For Doctor" clinical bullet summary
-- Generated timestamp footer
-
----
-
-### Bilingual Support (EN + Bahasa Malaysia)
-
-- Set once during onboarding, applied to every interaction
-- All check-in questions, triage responses, wellness checks, alerts in BM or EN
-- Gemini generates native BM — not translated, not degraded
-
----
 
 ## 6. All User Scenarios — End to End
 
