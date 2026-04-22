@@ -313,27 +313,7 @@ Shown when ≥2 missed meds or skipped meals detected in a week:
 ```
 Each choice has real action: reminder set / family WhatsApp sent / teleconsult links sent.
 
----
 
-
-## 6. All User Scenarios — End to End
-
-
-### Scenario 2: Daily Check-In (All Good)
-
-```
-[8:00 AM — cron fires]
-KAI: "Hi Sarah 👋 Has Bobby taken their medication? YES or NO"
-Sarah: YES
-KAI: "Great 👍 Thanks for confirming. Has Bobby eaten their meals? YES or NO"
-Sarah: YES
-KAI: "Wonderful 😊 Any concerns about Bobby today? YES or NO"
-Sarah: NO
-KAI: "📊 Bobby's Care Score Today: 100/100 ✅ All good 💚"
-KAI: "💉 What was Bobby's blood sugar today? (e.g., 7.2 mmol/L) — or type skip"
-Sarah: 6.4
-KAI: "✅ Recorded: 6.4"
-```
 
 ---
 
@@ -367,78 +347,7 @@ KAI: [Gemini triage with patient profile + 7-day patterns]
      • KKMNow: https://kkmapp.moh.gov.my"
 ```
 
----
 
-### Scenario 4: KAI Eyes — Medication Photo
-
-```
-Sarah sends photo of Apidra SoloStar insulin pen
-Caption: "may i consume this"
-
-KAI: "👁️ KAI Eyes is analyzing your photo... Results will arrive in a few seconds."
-
-[Async pipeline:]
-  Cloud Vision → OCR: "Apidra SoloStar Insulin glulisine 100 IU/mL SANOFI 5 SOLOSTAR injection pens"
-  Cloud Vision → Labels: "Medicine 95%, Medical equipment 89%"
-  Gemini → Grounded by OCR text:
-
-KAI: "👁️ KAI Eyes Assessment
-
-🔍 What I see:
-Apidra SoloStar insulin glulisine 100 IU/mL injection pen by Sanofi. Label clearly readable.
-
-🩺 Clinical interpretation:
-This is a rapid-acting insulin — for Bobby who is diabetic, timing of this injection is critical relative to meals. Confirm it matches the prescribed insulin type.
-
-📊 Triage: HOME CARE
-
-💊 Medication Check:
-• Identified: Apidra (insulin glulisine) 100 IU/mL
-• Match with Bobby's records: ✅ Correct medication
-• Dosage: 100 IU/mL (confirm prescribed units with doctor)
-• Expiry: Not visible in photo
-• Action: Verify the prescribed dose and inject within 15 minutes of a meal
-
-✅ What to do now:
-• Ensure Bobby has eaten or is about to eat before injecting
-• Inject at prescribed dose per doctor's instructions
-• Monitor for hypoglycemia (shaking, sweating, confusion) for 1-2 hours
-
-📋 FDA-Verified Drug Info (OpenFDA):
-💊 Drug class: Insulin [Human] [EPC]
-⚠️ FDA warning: Hypoglycemia is the most common adverse reaction..."
-
-[If recent symptom notes exist, adds:]
-"🔍 KAI Insight — Medication Safety Analysis:
-Bobby reported dizziness 2 days ago. Dizziness can be a symptom of hypoglycemia — a known risk with rapid-acting insulin. Worth discussing with your doctor before the next dose.
-⚠️ This is an observational flag only. Do not change any medication without consulting your doctor."
-```
-
----
-
-### Scenario 5: KAI Eyes — Wound Photo
-
-```
-Sarah sends photo of skin rash on Bobby's leg
-
-KAI: "👁️ KAI Eyes Assessment
-
-🔍 What I see:
-Reddish, slightly raised skin area approximately 3-4cm in diameter on the lower leg. No visible open wound or discharge.
-
-🩺 Clinical interpretation:
-For Bobby who has diabetes, any skin change on the lower limbs carries higher risk due to impaired circulation and healing. This warrants monitoring.
-
-📊 Triage: HOME CARE
-
-✅ What to do now:
-• Keep the area clean and dry
-• Do not apply any cream or ointment without doctor advice
-• Monitor for spreading redness or warmth
-
-📸 Track it: Take another photo in 24 hours to monitor for changes.
-⏰ Escalate to clinic if: redness spreads beyond the affected area, or skin breaks open"
-```
 
 ---
 
@@ -484,50 +393,6 @@ Sarah: 2
 KAI: "📲 Message sent to Ahmad (family member)."
 [Family receives weekly summary + pattern alert]
 ```
-
----
-
-### Scenario 8: Wellness Check
-
-```
-[Every 3 days, appended after check-in summary]
-KAI: "💙 Sarah, how are YOU holding up today?
-     1. I'm okay
-     2. A bit tired  
-     3. Really struggling"
-
-Sarah: 3
-KAI: "Sarah, you're doing something incredibly hard. Your feelings are valid.
-     
-     🆘 Support resources:
-     • Befrienders KL: 03-7627 2929 (24hr)
-     • MIASA: +603 2780 6803
-     
-     You are not alone in this 💙"
-[Family quietly alerted]
-```
-
----
-
-### Scenario 9: Update Medication List + Interaction Check
-
-```
-Sarah: /updatemeds Metformin 500mg, Amlodipine 5mg, Warfarin 5mg, Aspirin 100mg
-
-KAI: "💊 Medication list updated for Bobby:
-     Metformin 500mg, Amlodipine 5mg, Warfarin 5mg, Aspirin 100mg
-     
-     ⚠️ Drug Interactions Found (source: RxNorm / NLM):
-     🔴 Warfarin + Aspirin:
-        ...concurrent use of aspirin may increase bleeding risk with warfarin...
-     🟡 Metformin + Amlodipine:
-        ...monitor blood glucose levels when used together..."
-```
-
----
-
-**Step 6** — Send `/updatemeds Warfarin 5mg, Aspirin 100mg`  
-→ Shows: interaction warning flags immediately
 
 **Step 7** — Trigger A&E verdict (describe stroke symptoms)  
 → Shows: A&E output + family phone receives alert in real-time
