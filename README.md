@@ -301,113 +301,8 @@ All data persisted to `users/{phone}` in Firestore.
   - Befrienders KL: 03-7627 2929 (24hr)
   - MIASA: +603 2780 6803
 
----
 
-### Escalation Menu
-
-Shown when ≥2 missed meds or skipped meals detected in a week:
-```
-1️⃣ Set a medication reminder
-2️⃣ Notify a family member
-3️⃣ Book a teleconsult
-```
-Each choice has real action: reminder set / family WhatsApp sent / teleconsult links sent.
-
-
-
----
-
-### Scenario 3: Missed Medication + Concern Raised
-
-```
-[8:00 AM — cron fires]
-KAI: "Has Bobby taken their medication?"
-Sarah: NO
-KAI: "⚠️ It looks like Bobby may have missed medication.
-     Recommended:
-     • Give medication if safe to do so
-     • If unsure, check prescription or contact doctor
-     
-     2️⃣ Has Bobby eaten their meals? YES or NO"
-Sarah: YES
-KAI: "Any concerns about Bobby today?"
-Sarah: YES
-KAI: "I hear you 💙 What concerns are you noticing about Bobby?
-     Describe what's happening and I'll help you assess."
-Sarah: "Bobby has been dizzy since this morning and can't stand up properly"
-KAI: [Gemini triage with patient profile + 7-day patterns]
-     "🩺 Triage: CLINIC TODAY
-     🏥 This needs a doctor's assessment today — not an emergency.
-     • Tell the doctor: dizziness with difficulty standing since morning, diabetic on Metformin 500mg + Amlodipine 5mg, missed medication this morning
-     • While waiting: have Bobby sit or lie down, check if medication was taken yesterday
-     ⚠️ Go to A&E instead if: Bobby becomes unresponsive or speech becomes slurred
-     
-     🏥 Book now:
-     • DoctorOnCall: https://www.doctoroncall.com.my
-     • KKMNow: https://kkmapp.moh.gov.my"
-```
-
-
-
----
-
-### Scenario 6: A&E Verdict — Family Alert Fired
-
-```
-Sarah: "Bobby suddenly can't speak properly and his face looks droopy on one side"
-
-KAI: "🩺 Triage: GO TO A&E NOW
-     🚨 Go to A&E immediately — do not wait.
-     📋 Show this to the doctor:
-     Patient: Bobby Tan, 72 — Hypertension — on Amlodipine 5mg, Metformin 500mg
-     Concern: sudden facial drooping and speech difficulty — possible stroke
-     🚗 While travelling: keep Bobby seated upright, do not give food or water"
-
-[Family alert fired to registered family WhatsApp:]
-"🚨 EMERGENCY — KAI Alert
-Sarah has been advised to take Bobby to A&E immediately.
-Please call them now."
-```
-
----
-
-### Scenario 7: Weekly Pattern Escalation
-
-```
-[After 3 days of missed medication detected]
-KAI: "I noticed:
-     💊 Bobby missed medication 3x this week
-     🍽️ Bobby skipped meals 2x this week
-     
-     ⚠️ KAI Insight:
-     Bobby has missed medication 3 times recently.
-     
-     Would you like me to:
-     1️⃣ Set a medication reminder
-     2️⃣ Notify a family member
-     3️⃣ Book a teleconsult
-     
-     Reply 1, 2, or 3"
-
-Sarah: 2
-KAI: "📲 Message sent to Ahmad (family member)."
-[Family receives weekly summary + pattern alert]
-```
-
-**Step 7** — Trigger A&E verdict (describe stroke symptoms)  
-→ Shows: A&E output + family phone receives alert in real-time
-
-**Step 8** — Sunday cron demo: show weekly summary message received on family phone  
-→ Shows: full care score, adherence summary, caregiver attribution
-
-**Step 9** — Open web app, click Sign Up, complete 9-step onboarding, click Open WhatsApp  
-→ Shows: profile saved to Firestore, 5-second countdown, auto-redirect to /report
-
-**Step 10** — Open `/home?phone=+60xxxxxxxxx` in browser  
-→ Shows: live dashboard with today's check-in status, 7-day bar chart, latest vital, full report tab, doctor-ready summary
-
----
-
+  
 ## 8. Codebase Structure
 
 ```
@@ -529,7 +424,7 @@ npx genkit start
 
 ---
 
-## 11. Extended Knowledge — Unused but Useful Google Tools
+## 11. Extended Knowledge 
 
 These tools are installed or available but not yet fully wired into the current flow. Relevant for future development:
 
